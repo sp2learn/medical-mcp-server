@@ -183,7 +183,6 @@ async def login(username: str = Form(...), password: str = Form(...)):
         response.set_cookie("session_id", session_id, httponly=True, max_age=86400)
         return response
     else:
-        # Return login page with error
         return HTMLResponse("""
         <!DOCTYPE html>
         <html>
@@ -300,7 +299,7 @@ async def home(request: Request):
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
     
-    return f"""
+    return """
     <!DOCTYPE html>
     <html>
     <head>
@@ -324,7 +323,7 @@ async def home(request: Request):
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h1>🏥 Medical Query Assistant</h1>
             <div style="text-align: right;">
-                <span style="color: #666;">Welcome, <strong>{current_user}</strong></span>
+                <span style="color: #666;">Welcome, <strong>""" + current_user + """</strong></span>
                 <a href="/logout" style="margin-left: 15px; color: #007bff; text-decoration: none;">Logout</a>
             </div>
         </div>
