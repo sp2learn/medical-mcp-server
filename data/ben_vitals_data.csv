@@ -1,0 +1,11 @@
+date,systolic_bp,diastolic_bp,heart_rate,temperature_f,weight_kg,glucose_mg_dl,notes
+2024-09-14,142,88,72,98.6,78.2,156,morning reading
+2024-09-11,145,92,75,98.4,78.5,162,post-meal
+2024-09-08,138,85,70,98.7,78.0,148,fasting
+2024-09-05,150,95,78,98.5,78.8,168,evening reading
+2024-09-02,144,90,73,98.6,78.3,154,morning reading
+2024-08-30,147,93,76,98.4,78.6,165,post-meal
+2024-08-27,141,87,71,98.7,78.1,151,fasting
+2024-08-24,149,94,77,98.5,78.7,163,evening reading
+2024-08-21,143,89,74,98.6,78.4,157,morning reading
+2024-08-18,146,91,75,98.4,78.5,160,post-meal

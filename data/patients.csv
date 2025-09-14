@@ -1,0 +1,4 @@
+patient_id,first_name,last_name,age,gender,height_cm,weight_kg,blood_type,conditions,medications,last_visit,phone,email
+ben_smith,Ben,Smith,34,male,175,78,O+,"hypertension,type_2_diabetes","metformin,lisinopril",2024-01-15,555-0123,ben.smith@email.com
+sarah_jones,Sarah,Jones,28,female,162,58,A+,asthma,albuterol,2024-01-20,555-0124,sarah.jones@email.com
+mike_wilson,Mike,Wilson,45,male,180,85,B+,high_cholesterol,atorvastatin,2024-01-10,555-0125,mike.wilson@email.com

@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 
 from medical_client import MedicalClient
 from patient_data_manager import PatientDataManager
+from intelligent_medical_assistant import IntelligentMedicalAssistant
 
 # Load environment variables
 load_dotenv()
@@ -29,16 +30,19 @@ app = FastAPI(title="Medical Query API", description="Medical information web se
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Initialize medical client and patient manager with error handling
+# Initialize medical services with error handling
 try:
     medical_client = MedicalClient()
     patient_manager = PatientDataManager()
+    intelligent_assistant = IntelligentMedicalAssistant()
     print(f"✅ Medical client initialized with model: {medical_client.model_type}")
     print(f"✅ Patient data manager initialized with {len(patient_manager.patients)} patients")
+    print(f"✅ Intelligent assistant initialized")
 except Exception as e:
     print(f"❌ Failed to initialize services: {e}")
     medical_client = None
     patient_manager = None
+    intelligent_assistant = None
 
 # Simple in-memory session store (use Redis/DB in production)
 sessions = {}
@@ -99,6 +103,9 @@ class PatientQuery(BaseModel):
     patient_identifier: str
     query_type: str  # sleep, vitals, labs, medications, activity, overview
     days: Optional[int] = 30
+
+class IntelligentQuery(BaseModel):
+    query: str
 
 # Authentication endpoints
 @app.get("/login", response_class=HTMLResponse)
@@ -276,14 +283,32 @@ async def patient_query(query: PatientQuery, request: Request):
         print(f"Patient query error: {e}")
         raise HTTPException(status_code=500, detail=f"Patient data service error: {str(e)}")
 
+@app.post("/api/intelligent-query")
+async def intelligent_query(query: IntelligentQuery, request: Request):
+    """Handle intelligent medical queries (protected)."""
+    current_user = get_current_user(request)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    if not intelligent_assistant:
+        raise HTTPException(status_code=503, detail="Intelligent assistant unavailable")
+    
+    try:
+        response = await intelligent_assistant.process_query(query.query)
+        return {"response": response, "user": current_user}
+    except Exception as e:
+        print(f"Intelligent query error: {e}")
+        raise HTTPException(status_code=500, detail=f"Assistant error: {str(e)}")
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    if medical_client and patient_manager:
+    if medical_client and patient_manager and intelligent_assistant:
         return {
             "status": "healthy", 
             "model": medical_client.model_type,
-            "patients": len(patient_manager.patients)
+            "patients": len(patient_manager.patients),
+            "assistant": "active"
         }
     else:
         return {"status": "degraded", "services": "unavailable"}

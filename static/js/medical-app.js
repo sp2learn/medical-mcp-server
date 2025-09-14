@@ -20,91 +20,36 @@ class MedicalApp {
         });
     }
 
-    // Medical Query Functions
-    async askQuestion() {
-        const question = document.getElementById('question').value;
-        const context = document.getElementById('context').value;
+    // Intelligent Medical Query Function
+    async processIntelligentQuery() {
+        const query = document.getElementById('medical_query').value;
         
-        if (!question.trim()) {
-            this.showAlert('Please enter a question');
+        if (!query.trim()) {
+            this.showAlert('Please enter your medical question');
             return;
         }
         
-        this.showLoading('loading1', true);
-        this.hideResponse('response1');
+        this.showLoading('loading_main', true);
+        this.hideResponse('response_main');
         
         try {
-            const response = await this.makeRequest('/api/medical-query', {
-                question,
-                context
+            const response = await this.makeRequest('/api/intelligent-query', {
+                query: query
             });
             
-            this.showResponse('response1', response.response);
+            this.showResponse('response_main', response.response);
         } catch (error) {
-            this.showResponse('response1', 'Error: ' + error.message);
+            this.showResponse('response_main', 'Error: ' + error.message);
         } finally {
-            this.showLoading('loading1', false);
+            this.showLoading('loading_main', false);
         }
     }
 
-    // Symptom Checker Functions
-    async checkSymptoms() {
-        const symptomsText = document.getElementById('symptoms').value;
-        const age = document.getElementById('age').value;
-        const gender = document.getElementById('gender').value;
-        
-        if (!symptomsText.trim()) {
-            this.showAlert('Please enter symptoms');
-            return;
-        }
-        
-        const symptoms = symptomsText.split(',').map(s => s.trim()).filter(s => s);
-        
-        this.showLoading('loading2', true);
-        this.hideResponse('response2');
-        
-        try {
-            const payload = { symptoms };
-            if (age) payload.age = parseInt(age);
-            if (gender) payload.gender = gender;
-            
-            const response = await this.makeRequest('/api/symptom-check', payload);
-            this.showResponse('response2', response.response);
-        } catch (error) {
-            this.showResponse('response2', 'Error: ' + error.message);
-        } finally {
-            this.showLoading('loading2', false);
-        }
-    }
-
-    // Patient Query Functions
-    async queryPatientData() {
-        const patientName = document.getElementById('patient_name').value;
-        const queryType = document.getElementById('query_type').value;
-        const days = document.getElementById('days').value;
-        
-        if (!patientName.trim()) {
-            this.showAlert('Please enter a patient name or ID');
-            return;
-        }
-        
-        this.showLoading('loading3', true);
-        this.hideResponse('response3');
-        
-        try {
-            const payload = { 
-                patient_identifier: patientName,
-                query_type: queryType,
-                days: parseInt(days) || 30
-            };
-            
-            const response = await this.makeRequest('/api/patient-query', payload);
-            this.showResponse('response3', response.response);
-        } catch (error) {
-            this.showResponse('response3', 'Error: ' + error.message);
-        } finally {
-            this.showLoading('loading3', false);
-        }
+    // Example Functions
+    fillExample(exampleText) {
+        document.getElementById('medical_query').value = exampleText;
+        // Auto-focus on the query button
+        document.querySelector('button[onclick="processIntelligentQuery()"]').focus();
     }
 
     // Utility Functions
@@ -216,14 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Global functions for HTML onclick handlers
-function askQuestion() {
-    window.medicalApp.askQuestion();
+function processIntelligentQuery() {
+    window.medicalApp.processIntelligentQuery();
 }
 
-function checkSymptoms() {
-    window.medicalApp.checkSymptoms();
-}
-
-function queryPatientData() {
-    window.medicalApp.queryPatientData();
+function fillExample(exampleText) {
+    window.medicalApp.fillExample(exampleText);
 }
