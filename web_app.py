@@ -23,8 +23,13 @@ load_dotenv()
 # Initialize FastAPI app
 app = FastAPI(title="Medical Query API", description="Medical information web service")
 
-# Initialize medical client
-medical_client = MedicalClient()
+# Initialize medical client with error handling
+try:
+    medical_client = MedicalClient()
+    print(f"✅ Medical client initialized with model: {medical_client.model_type}")
+except Exception as e:
+    print(f"❌ Failed to initialize medical client: {e}")
+    medical_client = None
 
 # Simple in-memory session store (use Redis/DB in production)
 sessions = {}
@@ -447,11 +452,15 @@ async def medical_query(query: MedicalQuery, request: Request):
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required")
     
+    if not medical_client:
+        raise HTTPException(status_code=503, detail="Medical service unavailable")
+    
     try:
         response = await medical_client.query_medical_question(query.question, query.context)
         return {"response": response, "user": current_user}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Medical query error: {e}")
+        raise HTTPException(status_code=500, detail=f"Medical service error: {str(e)}")
 
 @app.post("/api/symptom-check")
 async def symptom_check(check: SymptomCheck, request: Request):
@@ -460,16 +469,23 @@ async def symptom_check(check: SymptomCheck, request: Request):
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required")
     
+    if not medical_client:
+        raise HTTPException(status_code=503, detail="Medical service unavailable")
+    
     try:
         response = await medical_client.analyze_symptoms(check.symptoms, check.age, check.gender)
         return {"response": response, "user": current_user}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Symptom check error: {e}")
+        raise HTTPException(status_code=500, detail=f"Medical service error: {str(e)}")
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "model": medical_client.model_type}
+    if medical_client:
+        return {"status": "healthy", "model": medical_client.model_type}
+    else:
+        return {"status": "degraded", "model": "unavailable"}
 
 if __name__ == "__main__":
     import uvicorn
@@ -477,4 +493,12 @@ if __name__ == "__main__":
     
     # Use PORT environment variable for cloud deployment
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    
+    # Production-ready configuration
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=port,
+        log_level="info",
+        access_log=True
+    )
