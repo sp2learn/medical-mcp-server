@@ -10,6 +10,7 @@ class MedicalApp {
     init() {
         console.log('Medical App initialized');
         this.setupEventListeners();
+        this.updatePageLoadTime();
     }
 
     setupEventListeners() {
@@ -180,6 +181,32 @@ class MedicalApp {
         document.getElementById('patient_name').value = patient;
         document.getElementById('query_type').value = type;
         this.queryPatientData();
+    }
+
+    // Timestamp utilities
+    updatePageLoadTime() {
+        const now = new Date();
+        const timeString = now.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
+        
+        // Update any elements with class 'page-load-time'
+        const elements = document.querySelectorAll('.page-load-time');
+        elements.forEach(el => {
+            el.textContent = timeString;
+        });
+        
+        console.log('Page loaded at:', timeString);
+    }
+
+    refreshTimestamp() {
+        // Refresh the current page to get updated server timestamp
+        window.location.reload();
     }
 }
 

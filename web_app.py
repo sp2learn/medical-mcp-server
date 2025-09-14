@@ -12,6 +12,8 @@ from typing import List, Optional
 import hashlib
 import secrets
 from datetime import datetime, timedelta
+import pytz
+import os
 from dotenv import load_dotenv
 
 from medical_client import MedicalClient
@@ -57,6 +59,19 @@ def create_session(username: str) -> str:
         "expires_at": datetime.now() + timedelta(hours=24)
     }
     return session_id
+
+def get_formatted_timestamp() -> str:
+    """Get current timestamp in a user-friendly format."""
+    try:
+        # Get timezone from environment variable or default to Eastern Time
+        timezone_name = os.getenv("DISPLAY_TIMEZONE", "America/New_York")
+        local_tz = pytz.timezone(timezone_name)
+        current_time = datetime.now(local_tz).strftime("%B %d, %Y at %I:%M %p %Z")
+        return current_time
+    except Exception as e:
+        # Fallback to UTC if timezone handling fails
+        print(f"Timezone error: {e}, falling back to UTC")
+        return datetime.utcnow().strftime("%B %d, %Y at %I:%M %p UTC")
 
 def get_current_user(request: Request) -> Optional[str]:
     session_id = request.cookies.get("session_id")
@@ -126,9 +141,13 @@ async def home(request: Request):
     if not current_user:
         return RedirectResponse(url="/login", status_code=302)
     
+    # Get current time in a user-friendly format
+    current_time = get_formatted_timestamp()
+    
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "current_user": current_user
+        "current_user": current_user,
+        "current_time": current_time
     })
 
 @app.post("/api/medical-query")
