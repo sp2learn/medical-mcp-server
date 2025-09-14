@@ -1,181 +1,91 @@
 """
-Patient Data Manager - Simulates patient data storage and retrieval
-In production, this would connect to EHR systems, wearables, lab systems, etc.
+Patient Data Manager - Manages patient data from doctor_data and whoop_data folders
 """
 
-from datetime import datetime, timedelta
-import random
-from typing import Dict, List, Optional, Any
+import pandas as pd
 import json
+import os
+from typing import Dict, List, Optional, Any
+from datetime import datetime
 
 class PatientDataManager:
     def __init__(self):
-        # Simulated patient database
-        self.patients = {
-            "ben_smith": {
-                "id": "ben_smith",
-                "name": "Ben Smith",
-                "age": 34,
-                "gender": "male",
-                "conditions": ["hypertension", "type_2_diabetes"],
-                "medications": ["metformin", "lisinopril"],
-                "last_visit": "2024-01-15"
-            },
-            "sarah_jones": {
-                "id": "sarah_jones", 
-                "name": "Sarah Jones",
-                "age": 28,
-                "gender": "female",
-                "conditions": ["asthma"],
-                "medications": ["albuterol"],
-                "last_visit": "2024-01-20"
-            },
-            "mike_wilson": {
-                "id": "mike_wilson",
-                "name": "Mike Wilson", 
-                "age": 45,
-                "gender": "male",
-                "conditions": ["high_cholesterol"],
-                "medications": ["atorvastatin"],
-                "last_visit": "2024-01-10"
-            }
+        self.patients = {}
+        self.visits = []
+        self.whoop_data = {}
+        self._load_patient_data()
+    
+    def _load_patient_data(self):
+        """Load patient data from doctor_data and whoop_data folders."""
+        try:
+            # Load patients from doctor_data
+            if os.path.exists("doctor_data/patients.csv"):
+                patients_df = pd.read_csv("doctor_data/patients.csv")
+                for _, patient in patients_df.iterrows():
+                    patient_id = f"{patient['first_name'].lower()}_{patient['last_name'].lower()}"
+                    
+                    # Handle conditions
+                    conditions_str = patient.get('conditions', '')
+                    if pd.isna(conditions_str) or conditions_str == 'n/a':
+                        conditions = []
+                    else:
+                        conditions = [c.strip() for c in str(conditions_str).split(',') if c.strip()]
+                    
+                    # Handle medications
+                    medications_str = patient.get('medications', '')
+                    if pd.isna(medications_str) or medications_str == 'n/a':
+                        medications = []
+                    else:
+                        medications = [m.strip() for m in str(medications_str).split(',') if m.strip()]
+                    
+                    self.patients[patient_id] = {
+                        "id": patient_id,
+                        "patient_id": patient['patient_id'],
+                        "name": f"{patient['first_name']} {patient['last_name']}",
+                        "first_name": patient['first_name'],
+                        "last_name": patient['last_name'],
+                        "age": patient['age'],
+                        "gender": patient['gender'],
+                        "height_cm": patient.get('height_cm'),
+                        "weight_kg": patient.get('weight_kg'),
+                        "blood_type": patient.get('blood_type'),
+                        "conditions": conditions,
+                        "medications": medications,
+                        "last_visit": patient.get('last_visit'),
+                        "email": patient.get('email')
+                    }
+            
+            # Load visits from doctor_data
+            if os.path.exists("doctor_data/visits.json"):
+                with open("doctor_data/visits.json", 'r') as f:
+                    self.visits = json.load(f)
+            
+            # Load Whoop data (only for Amos)
+            self._load_whoop_data()
+            
+        except Exception as e:
+            print(f"Error loading patient data: {e}")
+    
+    def _load_whoop_data(self):
+        """Load Whoop data for Amos only."""
+        whoop_files = {
+            'sleep': 'whoop_data/sleeps.csv',
+            'workouts': 'whoop_data/workouts.csv',
+            'cycles': 'whoop_data/physiological_cycles.csv',
+            'journal': 'whoop_data/journal_entries.csv'
         }
         
-        # Generate sample data
-        self._generate_sample_data()
+        for data_type, file_path in whoop_files.items():
+            if os.path.exists(file_path):
+                self.whoop_data[data_type] = pd.read_csv(file_path)
     
-    def _generate_sample_data(self):
-        """Generate realistic sample data for demo purposes."""
-        for patient_id in self.patients.keys():
-            self._generate_sleep_data(patient_id)
-            self._generate_vitals_data(patient_id)
-            self._generate_lab_results(patient_id)
-            self._generate_medication_adherence(patient_id)
-            self._generate_activity_data(patient_id)
+    def has_whoop_data(self, patient_name: str) -> bool:
+        """Check if patient has Whoop data (only Amos does)."""
+        return patient_name.lower() in ['amos', 'amos_appendino'] or 'amos' in patient_name.lower()
     
-    def _generate_sleep_data(self, patient_id: str):
-        """Generate 30 days of sleep data."""
-        sleep_data = []
-        base_sleep = 7.5 if patient_id == "ben_smith" else 8.0
-        
-        for i in range(30):
-            date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-            # Add some realistic variation
-            sleep_hours = base_sleep + random.uniform(-1.5, 1.5)
-            quality = random.choice(["poor", "fair", "good", "excellent"])
-            
-            sleep_data.append({
-                "date": date,
-                "sleep_hours": round(sleep_hours, 1),
-                "quality": quality,
-                "bedtime": f"{random.randint(21, 23)}:{random.randint(0, 59):02d}",
-                "wake_time": f"{random.randint(6, 8)}:{random.randint(0, 59):02d}"
-            })
-        
-        self.patients[patient_id]["sleep_data"] = sleep_data
-    
-    def _generate_vitals_data(self, patient_id: str):
-        """Generate vital signs data."""
-        vitals_data = []
-        
-        # Different baseline vitals per patient
-        if patient_id == "ben_smith":  # Has hypertension
-            bp_systolic_base = 145
-            bp_diastolic_base = 90
-        else:
-            bp_systolic_base = 120
-            bp_diastolic_base = 80
-        
-        for i in range(10):  # Last 10 readings
-            date = (datetime.now() - timedelta(days=i*3)).strftime("%Y-%m-%d")
-            
-            vitals_data.append({
-                "date": date,
-                "blood_pressure": {
-                    "systolic": bp_systolic_base + random.randint(-10, 15),
-                    "diastolic": bp_diastolic_base + random.randint(-5, 10)
-                },
-                "heart_rate": random.randint(65, 85),
-                "temperature": round(98.6 + random.uniform(-0.5, 1.0), 1),
-                "weight": round(170 + random.uniform(-2, 2), 1)
-            })
-        
-        self.patients[patient_id]["vitals_data"] = vitals_data
-    
-    def _generate_lab_results(self, patient_id: str):
-        """Generate lab results."""
-        lab_data = []
-        
-        # Recent lab work
-        for i in range(3):  # Last 3 lab visits
-            date = (datetime.now() - timedelta(days=i*30)).strftime("%Y-%m-%d")
-            
-            if patient_id == "ben_smith":  # Diabetic
-                glucose = random.randint(140, 180)
-                hba1c = round(7.2 + random.uniform(-0.5, 0.8), 1)
-            else:
-                glucose = random.randint(80, 100)
-                hba1c = round(5.4 + random.uniform(-0.2, 0.3), 1)
-            
-            lab_data.append({
-                "date": date,
-                "glucose": glucose,
-                "hba1c": hba1c,
-                "cholesterol": {
-                    "total": random.randint(180, 220),
-                    "ldl": random.randint(100, 140),
-                    "hdl": random.randint(40, 60)
-                },
-                "kidney_function": {
-                    "creatinine": round(1.0 + random.uniform(-0.2, 0.3), 1),
-                    "bun": random.randint(10, 20)
-                }
-            })
-        
-        self.patients[patient_id]["lab_data"] = lab_data
-    
-    def _generate_medication_adherence(self, patient_id: str):
-        """Generate medication adherence data."""
-        adherence_data = []
-        medications = self.patients[patient_id]["medications"]
-        
-        for med in medications:
-            # Generate 30 days of adherence
-            daily_adherence = []
-            for i in range(30):
-                date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-                taken = random.choice([True, True, True, False])  # 75% adherence
-                daily_adherence.append({
-                    "date": date,
-                    "taken": taken,
-                    "time_taken": f"{random.randint(7, 9)}:{random.randint(0, 59):02d}" if taken else None
-                })
-            
-            adherence_data.append({
-                "medication": med,
-                "prescribed_dose": "As prescribed",
-                "adherence_rate": round(sum(1 for d in daily_adherence if d["taken"]) / 30 * 100, 1),
-                "daily_records": daily_adherence
-            })
-        
-        self.patients[patient_id]["medication_adherence"] = adherence_data
-    
-    def _generate_activity_data(self, patient_id: str):
-        """Generate physical activity data."""
-        activity_data = []
-        
-        for i in range(30):
-            date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-            
-            activity_data.append({
-                "date": date,
-                "steps": random.randint(3000, 12000),
-                "active_minutes": random.randint(20, 90),
-                "calories_burned": random.randint(1800, 2500),
-                "exercise_sessions": random.randint(0, 2)
-            })
-        
-        self.patients[patient_id]["activity_data"] = activity_data
+    def get_whoop_not_connected_message(self, patient_name: str) -> str:
+        """Return message for patients without Whoop data."""
+        return f"{patient_name} has not connected their Whoop account. Only Amos Appendino has Whoop data available."
     
     def find_patient(self, query: str) -> Optional[Dict]:
         """Find patient by name or ID."""
@@ -192,125 +102,160 @@ class PatientDataManager:
         
         return None
     
-    def get_sleep_pattern(self, patient_id: str, days: int = 30) -> Dict:
-        """Get patient's sleep pattern."""
-        patient = self.patients.get(patient_id)
+    def find_patient_by_identifier(self, patient_identifier: Dict) -> Optional[Dict]:
+        """Find patient by identifier (first_name, last_name, or patient_id)."""
+        if "patient_id" in patient_identifier:
+            # Search by patient_id
+            for patient in self.patients.values():
+                if patient["patient_id"] == patient_identifier["patient_id"]:
+                    return patient
+        
+        if "first_name" in patient_identifier and "last_name" in patient_identifier:
+            # Search by name
+            first_name = patient_identifier["first_name"].lower()
+            last_name = patient_identifier["last_name"].lower()
+            patient_key = f"{first_name}_{last_name}"
+            return self.patients.get(patient_key)
+        
+        return None
+    
+    def get_patient_visits(self, patient_identifier: Dict) -> Dict:
+        """Get patient's visit history."""
+        patient = self.find_patient_by_identifier(patient_identifier)
         if not patient:
             return {"error": "Patient not found"}
         
-        sleep_data = patient.get("sleep_data", [])[:days]
-        
-        # Calculate summary statistics
-        if sleep_data:
-            avg_sleep = sum(d["sleep_hours"] for d in sleep_data) / len(sleep_data)
-            quality_counts = {}
-            for d in sleep_data:
-                quality_counts[d["quality"]] = quality_counts.get(d["quality"], 0) + 1
-        else:
-            avg_sleep = 0
-            quality_counts = {}
+        # Filter visits for this patient
+        patient_visits = [
+            visit for visit in self.visits 
+            if visit.get("patient_id") == patient["patient_id"]
+        ]
         
         return {
             "patient_name": patient["name"],
-            "period": f"Last {days} days",
-            "average_sleep_hours": round(avg_sleep, 1),
-            "sleep_quality_distribution": quality_counts,
-            "recent_data": sleep_data[:7],  # Last week
-            "summary": f"{patient['name']} averages {round(avg_sleep, 1)} hours of sleep per night over the past {days} days."
+            "total_visits": len(patient_visits),
+            "visits": patient_visits
         }
     
-    def get_vitals_summary(self, patient_id: str) -> Dict:
-        """Get patient's vital signs summary."""
-        patient = self.patients.get(patient_id)
-        if not patient:
-            return {"error": "Patient not found"}
-        
-        vitals_data = patient.get("vitals_data", [])
-        
-        if vitals_data:
-            latest = vitals_data[0]
-            avg_systolic = sum(v["blood_pressure"]["systolic"] for v in vitals_data) / len(vitals_data)
-            avg_diastolic = sum(v["blood_pressure"]["diastolic"] for v in vitals_data) / len(vitals_data)
-        else:
-            latest = {}
-            avg_systolic = avg_diastolic = 0
-        
-        return {
-            "patient_name": patient["name"],
-            "latest_reading": latest,
-            "average_bp": f"{round(avg_systolic)}/{round(avg_diastolic)}",
-            "recent_readings": vitals_data[:5],
-            "conditions": patient.get("conditions", [])
-        }
-    
-    def get_lab_results(self, patient_id: str) -> Dict:
-        """Get patient's lab results."""
-        patient = self.patients.get(patient_id)
-        if not patient:
-            return {"error": "Patient not found"}
-        
-        lab_data = patient.get("lab_data", [])
-        
-        return {
-            "patient_name": patient["name"],
-            "latest_labs": lab_data[0] if lab_data else {},
-            "lab_history": lab_data,
-            "conditions": patient.get("conditions", [])
-        }
-    
-    def get_medication_adherence(self, patient_id: str) -> Dict:
-        """Get patient's medication adherence."""
-        patient = self.patients.get(patient_id)
-        if not patient:
-            return {"error": "Patient not found"}
-        
-        adherence_data = patient.get("medication_adherence", [])
-        
-        return {
-            "patient_name": patient["name"],
-            "medications": adherence_data,
-            "overall_adherence": round(sum(m["adherence_rate"] for m in adherence_data) / len(adherence_data), 1) if adherence_data else 0
-        }
-    
-    def get_activity_summary(self, patient_id: str, days: int = 30) -> Dict:
-        """Get patient's activity summary."""
-        patient = self.patients.get(patient_id)
-        if not patient:
-            return {"error": "Patient not found"}
-        
-        activity_data = patient.get("activity_data", [])[:days]
-        
-        if activity_data:
-            avg_steps = sum(d["steps"] for d in activity_data) / len(activity_data)
-            avg_active_minutes = sum(d["active_minutes"] for d in activity_data) / len(activity_data)
-        else:
-            avg_steps = avg_active_minutes = 0
-        
-        return {
-            "patient_name": patient["name"],
-            "period": f"Last {days} days",
-            "average_daily_steps": round(avg_steps),
-            "average_active_minutes": round(avg_active_minutes),
-            "recent_activity": activity_data[:7]
-        }
-    
-    def get_patient_overview(self, patient_id: str) -> Dict:
+    def get_patient_overview(self, patient_identifier: Dict) -> Dict:
         """Get comprehensive patient overview."""
-        patient = self.patients.get(patient_id)
+        patient = self.find_patient_by_identifier(patient_identifier)
         if not patient:
             return {"error": "Patient not found"}
+        
+        # Get recent visits
+        patient_visits = [
+            visit for visit in self.visits 
+            if visit.get("patient_id") == patient["patient_id"]
+        ]
         
         return {
             "patient_info": {
+                "patient_id": patient["patient_id"],
                 "name": patient["name"],
                 "age": patient["age"],
                 "gender": patient["gender"],
+                "height_cm": patient.get("height_cm"),
+                "weight_kg": patient.get("weight_kg"),
+                "blood_type": patient.get("blood_type"),
                 "conditions": patient["conditions"],
                 "medications": patient["medications"],
-                "last_visit": patient["last_visit"]
+                "last_visit": patient["last_visit"],
+                "email": patient.get("email")
             },
-            "recent_vitals": patient.get("vitals_data", [])[:1],
-            "recent_labs": patient.get("lab_data", [])[:1],
-            "sleep_summary": f"Averages {round(sum(d['sleep_hours'] for d in patient.get('sleep_data', [])[:7]) / 7, 1)} hours/night",
-            "activity_summary": f"Averages {round(sum(d['steps'] for d in patient.get('activity_data', [])[:7]) / 7)} steps/day"
+            "recent_visits": patient_visits[:3],  # Last 3 visits
+            "total_visits": len(patient_visits),
+            "whoop_connected": self.has_whoop_data(patient["name"])
+        }
+    
+    def get_whoop_sleep_data(self, patient_identifier: Dict, days: int = 30) -> Dict:
+        """Get patient's Whoop sleep data."""
+        patient = self.find_patient_by_identifier(patient_identifier)
+        if not patient:
+            return {"error": "Patient not found"}
+        
+        if not self.has_whoop_data(patient["name"]):
+            return {"error": self.get_whoop_not_connected_message(patient["name"])}
+        
+        if 'sleep' not in self.whoop_data:
+            return {"error": "No Whoop sleep data available"}
+        
+        sleep_df = self.whoop_data['sleep']
+        # Filter for this patient and limit days
+        patient_sleep = sleep_df[sleep_df['Patient id'] == patient["patient_id"]].head(days)
+        
+        return {
+            "patient_name": patient["name"],
+            "period": f"Last {days} days",
+            "total_records": len(patient_sleep),
+            "sleep_data": patient_sleep.to_dict('records')
+        }
+    
+    def get_whoop_activity_data(self, patient_identifier: Dict, days: int = 30) -> Dict:
+        """Get patient's Whoop workout/activity data."""
+        patient = self.find_patient_by_identifier(patient_identifier)
+        if not patient:
+            return {"error": "Patient not found"}
+        
+        if not self.has_whoop_data(patient["name"]):
+            return {"error": self.get_whoop_not_connected_message(patient["name"])}
+        
+        if 'workouts' not in self.whoop_data:
+            return {"error": "No Whoop workout data available"}
+        
+        workouts_df = self.whoop_data['workouts']
+        # Filter for this patient and limit days
+        patient_workouts = workouts_df[workouts_df['Patient id'] == patient["patient_id"]].head(days)
+        
+        return {
+            "patient_name": patient["name"],
+            "period": f"Last {days} days",
+            "total_workouts": len(patient_workouts),
+            "workout_data": patient_workouts.to_dict('records')
+        }
+    
+    def get_whoop_physiological_cycle_data(self, patient_identifier: Dict, days: int = 30) -> Dict:
+        """Get patient's Whoop physiological cycle data (recovery, strain, etc)."""
+        patient = self.find_patient_by_identifier(patient_identifier)
+        if not patient:
+            return {"error": "Patient not found"}
+        
+        if not self.has_whoop_data(patient["name"]):
+            return {"error": self.get_whoop_not_connected_message(patient["name"])}
+        
+        if 'cycles' not in self.whoop_data:
+            return {"error": "No Whoop physiological cycle data available"}
+        
+        cycles_df = self.whoop_data['cycles']
+        # Filter for this patient and limit days
+        patient_cycles = cycles_df[cycles_df['Patient id'] == patient["patient_id"]].head(days)
+        
+        return {
+            "patient_name": patient["name"],
+            "period": f"Last {days} days",
+            "total_cycles": len(patient_cycles),
+            "cycle_data": patient_cycles.to_dict('records')
+        }
+    
+    def get_whoop_journal_data(self, patient_identifier: Dict, days: int = 30) -> Dict:
+        """Get patient's Whoop journal data."""
+        patient = self.find_patient_by_identifier(patient_identifier)
+        if not patient:
+            return {"error": "Patient not found"}
+        
+        if not self.has_whoop_data(patient["name"]):
+            return {"error": self.get_whoop_not_connected_message(patient["name"])}
+        
+        if 'journal' not in self.whoop_data:
+            return {"error": "No Whoop journal data available"}
+        
+        journal_df = self.whoop_data['journal']
+        # Filter for this patient and limit days
+        patient_journal = journal_df[journal_df['Patient id'] == patient["patient_id"]].head(days)
+        
+        return {
+            "patient_name": patient["name"],
+            "period": f"Last {days} days",
+            "total_entries": len(patient_journal),
+            "journal_data": patient_journal.to_dict('records')
         }

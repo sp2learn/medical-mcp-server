@@ -44,54 +44,8 @@ async def handle_list_tools() -> list[Tool]:
 async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent]:
     """Handle tool calls for medical queries."""
     
-    if name == "medical_query":
-        question = arguments.get("question", "")
-        context = arguments.get("context", "")
-        
-        if not question:
-            return [types.TextContent(
-                type="text",
-                text="Error: No question provided"
-            )]
-        
-        try:
-            response = await medical_client.query_medical_question(question, context)
-            return [types.TextContent(
-                type="text", 
-                text=response
-            )]
-        except Exception as e:
-            return [types.TextContent(
-                type="text",
-                text=f"Error processing medical query: {str(e)}"
-            )]
-    
-    elif name == "symptom_checker":
-        symptoms = arguments.get("symptoms", [])
-        age = arguments.get("age")
-        gender = arguments.get("gender")
-        
-        if not symptoms:
-            return [types.TextContent(
-                type="text",
-                text="Error: No symptoms provided"
-            )]
-        
-        try:
-            response = await medical_client.analyze_symptoms(symptoms, age, gender)
-            return [types.TextContent(
-                type="text",
-                text=response
-            )]
-        except Exception as e:
-            return [types.TextContent(
-                type="text", 
-                text=f"Error analyzing symptoms: {str(e)}"
-            )]
-    
-    elif name == "get_patient_sleep_pattern":
-        patient_identifier = arguments.get("patient_identifier", "")
-        days = arguments.get("days", 30)
+    if name == "get_patient_visits":
+        patient_identifier = arguments.get("patient_identifier", {})
         
         if not patient_identifier:
             return [types.TextContent(
@@ -100,25 +54,26 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[types.Text
             )]
         
         try:
-            # Find patient
-            patient = patient_manager.find_patient(patient_identifier)
-            if not patient:
+            visits_data = patient_manager.get_patient_visits(patient_identifier)
+            
+            if "error" in visits_data:
                 return [types.TextContent(
                     type="text",
-                    text=f"Error: Patient '{patient_identifier}' not found. Available patients: Ben Smith, Sarah Jones, Mike Wilson"
+                    text=visits_data["error"]
                 )]
             
-            # Get sleep data
-            sleep_data = patient_manager.get_sleep_pattern(patient["id"], days)
+            response = f"Visit History for {visits_data['patient_name']}\n"
+            response += f"Total Visits: {visits_data['total_visits']}\n\n"
             
-            # Format response
-            response = f"Sleep Pattern Analysis for {sleep_data['patient_name']}\n"
-            response += f"Period: {sleep_data['period']}\n"
-            response += f"Average Sleep: {sleep_data['average_sleep_hours']} hours per night\n\n"
-            response += f"Sleep Quality Distribution:\n"
-            for quality, count in sleep_data['sleep_quality_distribution'].items():
-                response += f"  {quality.title()}: {count} nights\n"
-            response += f"\nSummary: {sleep_data['summary']}"
+            for visit in visits_data['visits'][:5]:  # Show last 5 visits
+                response += f"Visit Date: {visit.get('visit_date', 'N/A')}\n"
+                response += f"Type: {visit.get('visit_type', 'N/A')}\n"
+                response += f"Reason: {visit.get('reason', 'N/A')}\n"
+                response += f"Diagnosis: {visit.get('diagnosis', 'N/A')}\n"
+                if 'vitals' in visit:
+                    vitals = visit['vitals']
+                    response += f"Vitals: BP {vitals.get('systolic_bp', 'N/A')}/{vitals.get('diastolic_bp', 'N/A')}, HR {vitals.get('heart_rate', 'N/A')}\n"
+                response += "\n"
             
             return [types.TextContent(
                 type="text",
@@ -127,164 +82,11 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[types.Text
         except Exception as e:
             return [types.TextContent(
                 type="text",
-                text=f"Error retrieving sleep data: {str(e)}"
-            )]
-    
-    elif name == "get_patient_vitals":
-        patient_identifier = arguments.get("patient_identifier", "")
-        
-        if not patient_identifier:
-            return [types.TextContent(
-                type="text",
-                text="Error: Patient identifier required"
-            )]
-        
-        try:
-            patient = patient_manager.find_patient(patient_identifier)
-            if not patient:
-                return [types.TextContent(
-                    type="text",
-                    text=f"Error: Patient '{patient_identifier}' not found"
-                )]
-            
-            vitals_data = patient_manager.get_vitals_summary(patient["id"])
-            
-            response = f"Vital Signs Summary for {vitals_data['patient_name']}\n\n"
-            if vitals_data['latest_reading']:
-                latest = vitals_data['latest_reading']
-                response += f"Latest Reading ({latest['date']}):\n"
-                response += f"  Blood Pressure: {latest['blood_pressure']['systolic']}/{latest['blood_pressure']['diastolic']} mmHg\n"
-                response += f"  Heart Rate: {latest['heart_rate']} bpm\n"
-                response += f"  Temperature: {latest['temperature']}°F\n"
-                response += f"  Weight: {latest['weight']} lbs\n\n"
-            
-            response += f"Average BP: {vitals_data['average_bp']} mmHg\n"
-            response += f"Known Conditions: {', '.join(vitals_data['conditions'])}"
-            
-            return [types.TextContent(
-                type="text",
-                text=response
-            )]
-        except Exception as e:
-            return [types.TextContent(
-                type="text",
-                text=f"Error retrieving vitals: {str(e)}"
-            )]
-    
-    elif name == "get_patient_labs":
-        patient_identifier = arguments.get("patient_identifier", "")
-        
-        if not patient_identifier:
-            return [types.TextContent(
-                type="text",
-                text="Error: Patient identifier required"
-            )]
-        
-        try:
-            patient = patient_manager.find_patient(patient_identifier)
-            if not patient:
-                return [types.TextContent(
-                    type="text",
-                    text=f"Error: Patient '{patient_identifier}' not found"
-                )]
-            
-            lab_data = patient_manager.get_lab_results(patient["id"])
-            
-            response = f"Laboratory Results for {lab_data['patient_name']}\n\n"
-            if lab_data['latest_labs']:
-                latest = lab_data['latest_labs']
-                response += f"Latest Labs ({latest['date']}):\n"
-                response += f"  Glucose: {latest['glucose']} mg/dL\n"
-                response += f"  HbA1c: {latest['hba1c']}%\n"
-                response += f"  Total Cholesterol: {latest['cholesterol']['total']} mg/dL\n"
-                response += f"  LDL: {latest['cholesterol']['ldl']} mg/dL\n"
-                response += f"  HDL: {latest['cholesterol']['hdl']} mg/dL\n"
-                response += f"  Creatinine: {latest['kidney_function']['creatinine']} mg/dL\n"
-            
-            return [types.TextContent(
-                type="text",
-                text=response
-            )]
-        except Exception as e:
-            return [types.TextContent(
-                type="text",
-                text=f"Error retrieving lab results: {str(e)}"
-            )]
-    
-    elif name == "get_medication_adherence":
-        patient_identifier = arguments.get("patient_identifier", "")
-        
-        if not patient_identifier:
-            return [types.TextContent(
-                type="text",
-                text="Error: Patient identifier required"
-            )]
-        
-        try:
-            patient = patient_manager.find_patient(patient_identifier)
-            if not patient:
-                return [types.TextContent(
-                    type="text",
-                    text=f"Error: Patient '{patient_identifier}' not found"
-                )]
-            
-            adherence_data = patient_manager.get_medication_adherence(patient["id"])
-            
-            response = f"Medication Adherence for {adherence_data['patient_name']}\n\n"
-            response += f"Overall Adherence Rate: {adherence_data['overall_adherence']}%\n\n"
-            
-            for med in adherence_data['medications']:
-                response += f"{med['medication'].title()}:\n"
-                response += f"  Adherence Rate: {med['adherence_rate']}%\n"
-                response += f"  Prescribed: {med['prescribed_dose']}\n\n"
-            
-            return [types.TextContent(
-                type="text",
-                text=response
-            )]
-        except Exception as e:
-            return [types.TextContent(
-                type="text",
-                text=f"Error retrieving medication data: {str(e)}"
-            )]
-    
-    elif name == "get_patient_activity":
-        patient_identifier = arguments.get("patient_identifier", "")
-        days = arguments.get("days", 30)
-        
-        if not patient_identifier:
-            return [types.TextContent(
-                type="text",
-                text="Error: Patient identifier required"
-            )]
-        
-        try:
-            patient = patient_manager.find_patient(patient_identifier)
-            if not patient:
-                return [types.TextContent(
-                    type="text",
-                    text=f"Error: Patient '{patient_identifier}' not found"
-                )]
-            
-            activity_data = patient_manager.get_activity_summary(patient["id"], days)
-            
-            response = f"Physical Activity Summary for {activity_data['patient_name']}\n"
-            response += f"Period: {activity_data['period']}\n\n"
-            response += f"Average Daily Steps: {activity_data['average_daily_steps']:,}\n"
-            response += f"Average Active Minutes: {activity_data['average_active_minutes']} minutes/day\n"
-            
-            return [types.TextContent(
-                type="text",
-                text=response
-            )]
-        except Exception as e:
-            return [types.TextContent(
-                type="text",
-                text=f"Error retrieving activity data: {str(e)}"
+                text=f"Error retrieving visit data: {str(e)}"
             )]
     
     elif name == "get_patient_overview":
-        patient_identifier = arguments.get("patient_identifier", "")
+        patient_identifier = arguments.get("patient_identifier", {})
         
         if not patient_identifier:
             return [types.TextContent(
@@ -293,26 +95,30 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[types.Text
             )]
         
         try:
-            patient = patient_manager.find_patient(patient_identifier)
-            if not patient:
+            overview = patient_manager.get_patient_overview(patient_identifier)
+            
+            if "error" in overview:
                 return [types.TextContent(
                     type="text",
-                    text=f"Error: Patient '{patient_identifier}' not found"
+                    text=overview["error"]
                 )]
             
-            overview = patient_manager.get_patient_overview(patient["id"])
             info = overview['patient_info']
             
             response = f"Patient Overview: {info['name']}\n\n"
             response += f"Demographics:\n"
+            response += f"  Patient ID: {info['patient_id']}\n"
             response += f"  Age: {info['age']} years\n"
             response += f"  Gender: {info['gender'].title()}\n"
+            response += f"  Height: {info.get('height_cm', 'N/A')} cm\n"
+            response += f"  Weight: {info.get('weight_kg', 'N/A')} kg\n"
+            response += f"  Blood Type: {info.get('blood_type', 'N/A')}\n"
+            response += f"  Email: {info.get('email', 'N/A')}\n"
             response += f"  Last Visit: {info['last_visit']}\n\n"
-            response += f"Conditions: {', '.join(info['conditions'])}\n"
-            response += f"Medications: {', '.join(info['medications'])}\n\n"
-            response += f"Recent Summary:\n"
-            response += f"  Sleep: {overview['sleep_summary']}\n"
-            response += f"  Activity: {overview['activity_summary']}\n"
+            response += f"Conditions: {', '.join(info['conditions']) if info['conditions'] else 'None'}\n"
+            response += f"Medications: {', '.join(info['medications']) if info['medications'] else 'None'}\n\n"
+            response += f"Total Visits: {overview['total_visits']}\n"
+            response += f"Whoop Connected: {'Yes' if overview['whoop_connected'] else 'No'}\n"
             
             return [types.TextContent(
                 type="text",
@@ -322,6 +128,170 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[types.Text
             return [types.TextContent(
                 type="text",
                 text=f"Error retrieving patient overview: {str(e)}"
+            )]
+    
+    elif name == "get_patient_whoop_sleep_data":
+        patient_identifier = arguments.get("patient_identifier", {})
+        days = arguments.get("days", 30)
+        
+        if not patient_identifier:
+            return [types.TextContent(
+                type="text",
+                text="Error: Patient identifier required"
+            )]
+        
+        try:
+            sleep_data = patient_manager.get_whoop_sleep_data(patient_identifier, days)
+            
+            if "error" in sleep_data:
+                return [types.TextContent(
+                    type="text",
+                    text=sleep_data["error"]
+                )]
+            
+            response = f"Whoop Sleep Data for {sleep_data['patient_name']}\n"
+            response += f"Period: {sleep_data['period']}\n"
+            response += f"Total Records: {sleep_data['total_records']}\n\n"
+            
+            # Show summary of recent sleep data
+            if sleep_data['sleep_data']:
+                recent_sleeps = sleep_data['sleep_data'][:5]  # Last 5 nights
+                response += "Recent Sleep Performance:\n"
+                for sleep in recent_sleeps:
+                    response += f"  {sleep.get('Cycle start time', 'N/A')}: {sleep.get('Sleep performance %', 'N/A')}% performance, "
+                    response += f"{sleep.get('Asleep duration (min)', 'N/A')} min sleep\n"
+            
+            return [types.TextContent(
+                type="text",
+                text=response
+            )]
+        except Exception as e:
+            return [types.TextContent(
+                type="text",
+                text=f"Error retrieving Whoop sleep data: {str(e)}"
+            )]
+    
+    elif name == "get_patient_whoop_activity_data":
+        patient_identifier = arguments.get("patient_identifier", {})
+        days = arguments.get("days", 30)
+        
+        if not patient_identifier:
+            return [types.TextContent(
+                type="text",
+                text="Error: Patient identifier required"
+            )]
+        
+        try:
+            activity_data = patient_manager.get_whoop_activity_data(patient_identifier, days)
+            
+            if "error" in activity_data:
+                return [types.TextContent(
+                    type="text",
+                    text=activity_data["error"]
+                )]
+            
+            response = f"Whoop Activity Data for {activity_data['patient_name']}\n"
+            response += f"Period: {activity_data['period']}\n"
+            response += f"Total Workouts: {activity_data['total_workouts']}\n\n"
+            
+            # Show summary of recent workouts
+            if activity_data['workout_data']:
+                recent_workouts = activity_data['workout_data'][:5]  # Last 5 workouts
+                response += "Recent Workouts:\n"
+                for workout in recent_workouts:
+                    response += f"  {workout.get('Activity name', 'N/A')}: Strain {workout.get('Activity Strain', 'N/A')}, "
+                    response += f"{workout.get('Duration (min)', 'N/A')} min\n"
+            
+            return [types.TextContent(
+                type="text",
+                text=response
+            )]
+        except Exception as e:
+            return [types.TextContent(
+                type="text",
+                text=f"Error retrieving Whoop activity data: {str(e)}"
+            )]
+    
+    elif name == "get_patient_whoop_physiological_cycle_data":
+        patient_identifier = arguments.get("patient_identifier", {})
+        days = arguments.get("days", 30)
+        
+        if not patient_identifier:
+            return [types.TextContent(
+                type="text",
+                text="Error: Patient identifier required"
+            )]
+        
+        try:
+            cycle_data = patient_manager.get_whoop_physiological_cycle_data(patient_identifier, days)
+            
+            if "error" in cycle_data:
+                return [types.TextContent(
+                    type="text",
+                    text=cycle_data["error"]
+                )]
+            
+            response = f"Whoop Physiological Cycle Data for {cycle_data['patient_name']}\n"
+            response += f"Period: {cycle_data['period']}\n"
+            response += f"Total Cycles: {cycle_data['total_cycles']}\n\n"
+            
+            # Show summary of recent cycles
+            if cycle_data['cycle_data']:
+                recent_cycles = cycle_data['cycle_data'][:5]  # Last 5 cycles
+                response += "Recent Recovery & Strain:\n"
+                for cycle in recent_cycles:
+                    response += f"  {cycle.get('Cycle start time', 'N/A')}: Recovery {cycle.get('Recovery score %', 'N/A')}%, "
+                    response += f"Strain {cycle.get('Day Strain', 'N/A')}\n"
+            
+            return [types.TextContent(
+                type="text",
+                text=response
+            )]
+        except Exception as e:
+            return [types.TextContent(
+                type="text",
+                text=f"Error retrieving Whoop cycle data: {str(e)}"
+            )]
+    
+    elif name == "get_patient_whoop_journal_data":
+        patient_identifier = arguments.get("patient_identifier", {})
+        days = arguments.get("days", 30)
+        
+        if not patient_identifier:
+            return [types.TextContent(
+                type="text",
+                text="Error: Patient identifier required"
+            )]
+        
+        try:
+            journal_data = patient_manager.get_whoop_journal_data(patient_identifier, days)
+            
+            if "error" in journal_data:
+                return [types.TextContent(
+                    type="text",
+                    text=journal_data["error"]
+                )]
+            
+            response = f"Whoop Journal Data for {journal_data['patient_name']}\n"
+            response += f"Period: {journal_data['period']}\n"
+            response += f"Total Entries: {journal_data['total_entries']}\n\n"
+            
+            # Show summary of recent journal entries
+            if journal_data['journal_data']:
+                recent_entries = journal_data['journal_data'][:5]  # Last 5 entries
+                response += "Recent Journal Entries:\n"
+                for entry in recent_entries:
+                    answer = "Yes" if entry.get('Answered yes', False) else "No"
+                    response += f"  {entry.get('Cycle start time', 'N/A')}: {entry.get('Question text', 'N/A')} - {answer}\n"
+            
+            return [types.TextContent(
+                type="text",
+                text=response
+            )]
+        except Exception as e:
+            return [types.TextContent(
+                type="text",
+                text=f"Error retrieving Whoop journal data: {str(e)}"
             )]
     
     else:

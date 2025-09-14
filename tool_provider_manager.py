@@ -75,9 +75,11 @@ class ToolProvider(BaseModel):
     created_by: str = "admin"
 
 class ToolProviderManager:
-    def __init__(self, data_file: str = "data/tool_providers.json"):
+    def __init__(self, data_file: str = "config/tool_providers.json"):
         self.data_file = data_file
         self.providers: Dict[str, ToolProvider] = {}
+        # Ensure config directory exists
+        os.makedirs(os.path.dirname(data_file), exist_ok=True)
         self._load_providers()
     
     def _load_providers(self):

@@ -218,66 +218,17 @@ async def patient_query(query: PatientQuery, request: Request):
             available_patients = ", ".join([p["name"] for p in patient_manager.patients.values()])
             return {"response": f"Patient '{query.patient_identifier}' not found. Available patients: {available_patients}"}
         
-        # Route to appropriate data retrieval method
-        if query.query_type == "sleep":
-            data = patient_manager.get_sleep_pattern(patient["id"], query.days)
-            response = f"Sleep Pattern Analysis for {data['patient_name']}\n"
-            response += f"Period: {data['period']}\n"
-            response += f"Average Sleep: {data['average_sleep_hours']} hours per night\n\n"
-            response += f"Sleep Quality Distribution:\n"
-            for quality, count in data['sleep_quality_distribution'].items():
-                response += f"  {quality.title()}: {count} nights\n"
-            response += f"\nSummary: {data['summary']}"
-            
-        elif query.query_type == "vitals":
-            data = patient_manager.get_vitals_summary(patient["id"])
-            response = f"Vital Signs Summary for {data['patient_name']}\n\n"
-            if data['latest_reading']:
-                latest = data['latest_reading']
-                response += f"Latest Reading ({latest['date']}):\n"
-                response += f"  Blood Pressure: {latest['blood_pressure']['systolic']}/{latest['blood_pressure']['diastolic']} mmHg\n"
-                response += f"  Heart Rate: {latest['heart_rate']} bpm\n"
-                response += f"  Temperature: {latest['temperature']}°F\n"
-                response += f"  Weight: {latest['weight']} lbs\n\n"
-            response += f"Average BP: {data['average_bp']} mmHg\n"
-            response += f"Known Conditions: {', '.join(data['conditions'])}"
-            
-        elif query.query_type == "labs":
-            data = patient_manager.get_lab_results(patient["id"])
-            response = f"Laboratory Results for {data['patient_name']}\n\n"
-            if data['latest_labs']:
-                latest = data['latest_labs']
-                response += f"Latest Labs ({latest['date']}):\n"
-                response += f"  Glucose: {latest['glucose']} mg/dL\n"
-                response += f"  HbA1c: {latest['hba1c']}%\n"
-                response += f"  Total Cholesterol: {latest['cholesterol']['total']} mg/dL\n"
-                response += f"  LDL: {latest['cholesterol']['ldl']} mg/dL\n"
-                response += f"  HDL: {latest['cholesterol']['hdl']} mg/dL\n"
-                response += f"  Creatinine: {latest['kidney_function']['creatinine']} mg/dL\n"
-                
-        elif query.query_type == "medications":
-            data = patient_manager.get_medication_adherence(patient["id"])
-            response = f"Medication Adherence for {data['patient_name']}\n\n"
-            response += f"Overall Adherence Rate: {data['overall_adherence']}%\n\n"
-            for med in data['medications']:
-                response += f"{med['medication'].title()}:\n"
-                response += f"  Adherence Rate: {med['adherence_rate']}%\n"
-                response += f"  Prescribed: {med['prescribed_dose']}\n\n"
-                
-        elif query.query_type == "activity":
-            data = patient_manager.get_activity_summary(patient["id"], query.days)
-            response = f"Physical Activity Summary for {data['patient_name']}\n"
-            response += f"Period: {data['period']}\n\n"
-            response += f"Average Daily Steps: {data['average_daily_steps']:,}\n"
-            response += f"Average Active Minutes: {data['average_active_minutes']} minutes/day\n"
-            
-        elif query.query_type == "overview":
-            data = patient_manager.get_patient_overview(patient["id"])
-            info = data['patient_info']
-            response = f"Patient Overview: {info['name']}\n\n"
-            response += f"Demographics:\n"
-            response += f"  Age: {info['age']} years\n"
-            response += f"  Gender: {info['gender'].title()}\n"
+        # Note: Web interface needs to be updated for new data structure
+        # Currently using new patient data manager with doctor_data and whoop_data
+        response = "Web interface is being updated to work with the new data structure. Please use the MCP server directly for now."
+        
+        # TODO: Update web interface to use new methods:
+        # - get_patient_visits()
+        # - get_patient_overview() 
+        # - get_whoop_sleep_data()
+        # - get_whoop_activity_data()
+        # - get_whoop_physiological_cycle_data()
+        # - get_whoop_journal_data()
             response += f"  Last Visit: {info['last_visit']}\n\n"
             response += f"Conditions: {', '.join(info['conditions'])}\n"
             response += f"Medications: {', '.join(info['medications'])}\n\n"

@@ -4,6 +4,7 @@ Handles free-form medical queries and routes to appropriate tools
 """
 
 import pandas as pd
+import json
 import os
 from typing import Dict, List, Optional, Any
 from medical_client import MedicalClient
@@ -15,23 +16,32 @@ class IntelligentMedicalAssistant:
         self.patient_manager = PatientDataManager()
         self.patient_data = self._load_patient_data()
         
-    def _load_patient_data(self) -> Dict[str, pd.DataFrame]:
-        """Load patient data from CSV files."""
+    def _load_patient_data(self) -> Dict[str, Any]:
+        """Load patient data from doctor_data and whoop_data folders."""
         data = {}
-        data_dir = "data"
         
         try:
-            # Load main patient info
-            if os.path.exists(f"{data_dir}/patients.csv"):
-                data['patients'] = pd.read_csv(f"{data_dir}/patients.csv")
+            # Load doctor data
+            if os.path.exists("doctor_data/patients.csv"):
+                data['patients'] = pd.read_csv("doctor_data/patients.csv")
             
-            # Load Ben's specific data
-            if os.path.exists(f"{data_dir}/ben_sleep_data.csv"):
-                data['ben_sleep'] = pd.read_csv(f"{data_dir}/ben_sleep_data.csv")
+            if os.path.exists("doctor_data/visits.json"):
+                import json
+                with open("doctor_data/visits.json", 'r') as f:
+                    data['visits'] = json.load(f)
             
-            if os.path.exists(f"{data_dir}/ben_vitals_data.csv"):
-                data['ben_vitals'] = pd.read_csv(f"{data_dir}/ben_vitals_data.csv")
-                
+            # Load Whoop data (Amos only)
+            whoop_files = {
+                'whoop_sleep': 'whoop_data/sleeps.csv',
+                'whoop_workouts': 'whoop_data/workouts.csv',
+                'whoop_cycles': 'whoop_data/physiological_cycles.csv',
+                'whoop_journal': 'whoop_data/journal_entries.csv'
+            }
+            
+            for key, file_path in whoop_files.items():
+                if os.path.exists(file_path):
+                    data[key] = pd.read_csv(file_path)
+                    
         except Exception as e:
             print(f"Error loading patient data: {e}")
             
@@ -84,25 +94,30 @@ Provide a focused, professional response suitable for busy medical providers.
             patients_df = self.patient_data['patients']
             context.append("PATIENTS IN SYSTEM:")
             for _, patient in patients_df.iterrows():
-                context.append(f"- {patient['first_name']} {patient['last_name']}, {patient['age']}yo {patient['gender']}, Conditions: {patient['conditions']}")
+                conditions = patient.get('conditions', 'None') if pd.notna(patient.get('conditions')) else 'None'
+                context.append(f"- {patient['first_name']} {patient['last_name']}, {patient['age']}yo {patient['gender']}, Conditions: {conditions}")
         
-        if 'ben_sleep' in self.patient_data:
-            sleep_df = self.patient_data['ben_sleep']
-            recent_sleep = sleep_df.head(7)  # Last 7 days
-            avg_sleep = recent_sleep['sleep_hours'].mean()
-            context.append(f"\nBEN'S RECENT SLEEP DATA (last 7 days):")
-            context.append(f"- Average sleep: {avg_sleep:.1f} hours/night")
-            context.append(f"- Sleep quality distribution: {recent_sleep['sleep_quality'].value_counts().to_dict()}")
-            context.append(f"- Latest sleep: {recent_sleep.iloc[0]['sleep_hours']} hours on {recent_sleep.iloc[0]['date']}")
-        
-        if 'ben_vitals' in self.patient_data:
-            vitals_df = self.patient_data['ben_vitals']
-            latest_vitals = vitals_df.iloc[0]
-            context.append(f"\nBEN'S RECENT VITALS:")
-            context.append(f"- Latest BP: {latest_vitals['systolic_bp']}/{latest_vitals['diastolic_bp']} mmHg")
-            context.append(f"- Heart rate: {latest_vitals['heart_rate']} bpm")
-            context.append(f"- Weight: {latest_vitals['weight_kg']} kg")
-            context.append(f"- Glucose: {latest_vitals['glucose_mg_dl']} mg/dL")
+        if 'visits' in self.patient_data:
+            visits = self.patient_data['visits']
+            context.append(f"\nMEDICAL VISITS: {len(visits)} visits recorded")
+            
+        # Whoop data context (Amos only)
+        if 'whoop_sleep' in self.patient_data:
+            sleep_df = self.patient_data['whoop_sleep']
+            context.append(f"\nWHOOP DATA AVAILABLE:")
+            context.append(f"- Sleep data: {len(sleep_df)} records (Amos only)")
+            
+        if 'whoop_workouts' in self.patient_data:
+            workouts_df = self.patient_data['whoop_workouts']
+            context.append(f"- Workout data: {len(workouts_df)} sessions (Amos only)")
+            
+        if 'whoop_cycles' in self.patient_data:
+            cycles_df = self.patient_data['whoop_cycles']
+            context.append(f"- Recovery cycles: {len(cycles_df)} cycles (Amos only)")
+            
+        if 'whoop_journal' in self.patient_data:
+            journal_df = self.patient_data['whoop_journal']
+            context.append(f"- Health journal: {len(journal_df)} entries (Amos only)")
         
         return "\n".join(context)
     
@@ -110,54 +125,72 @@ Provide a focused, professional response suitable for busy medical providers.
         """Enhance response with specific patient data if relevant."""
         query_lower = query.lower()
         
-        # Check if query is about Ben's sleep
-        if 'ben' in query_lower and 'sleep' in query_lower and 'ben_sleep' in self.patient_data:
-            sleep_data = self._format_sleep_summary()
-            return f"{base_response}\n\n**Ben's Current Sleep Data:**\n{sleep_data}"
+        # Check if query is about Amos's Whoop data
+        if 'amos' in query_lower and 'whoop' in query_lower:
+            if 'sleep' in query_lower and 'whoop_sleep' in self.patient_data:
+                sleep_data = self._format_whoop_sleep_summary()
+                return f"{base_response}\n\n**Amos's Whoop Sleep Data:**\n{sleep_data}"
+            elif 'workout' in query_lower and 'whoop_workouts' in self.patient_data:
+                workout_data = self._format_whoop_workout_summary()
+                return f"{base_response}\n\n**Amos's Whoop Workout Data:**\n{workout_data}"
         
-        # Check if query is about Ben's vitals
-        if 'ben' in query_lower and ('vital' in query_lower or 'blood pressure' in query_lower or 'bp' in query_lower) and 'ben_vitals' in self.patient_data:
-            vitals_data = self._format_vitals_summary()
-            return f"{base_response}\n\n**Ben's Current Vital Signs:**\n{vitals_data}"
+        # Check if query is about patient visits
+        if 'visit' in query_lower and 'visits' in self.patient_data:
+            visits_data = self._format_visits_summary(query_lower)
+            return f"{base_response}\n\n**Recent Medical Visits:**\n{visits_data}"
         
         return base_response
     
-    def _format_sleep_summary(self) -> str:
-        """Format Ben's sleep data summary."""
-        if 'ben_sleep' not in self.patient_data:
-            return "No sleep data available."
+    def _format_whoop_sleep_summary(self) -> str:
+        """Format Amos's Whoop sleep data summary."""
+        if 'whoop_sleep' not in self.patient_data:
+            return "No Whoop sleep data available."
         
-        df = self.patient_data['ben_sleep']
+        df = self.patient_data['whoop_sleep']
         recent = df.head(7)
         
         summary = []
-        summary.append(f"📊 **Sleep Analysis (Last 7 Days)**")
-        summary.append(f"• Average Sleep Duration: {recent['sleep_hours'].mean():.1f} hours")
-        summary.append(f"• Sleep Efficiency: {recent['sleep_efficiency'].mean():.1f}%")
-        summary.append(f"• Average Deep Sleep: {recent['deep_sleep_minutes'].mean():.0f} minutes")
-        summary.append(f"• Average REM Sleep: {recent['rem_sleep_minutes'].mean():.0f} minutes")
-        summary.append(f"• Quality Distribution: {dict(recent['sleep_quality'].value_counts())}")
-        summary.append(f"• Latest Night: {recent.iloc[0]['sleep_hours']} hours ({recent.iloc[0]['sleep_quality']} quality)")
+        summary.append(f"😴 **Whoop Sleep Analysis (Last 7 Days)**")
+        if not recent.empty:
+            summary.append(f"• Average Sleep Performance: {recent['Sleep performance %'].mean():.1f}%")
+            summary.append(f"• Average Sleep Efficiency: {recent['Sleep efficiency %'].mean():.1f}%")
+            summary.append(f"• Average REM Sleep: {recent['REM duration (min)'].mean():.0f} minutes")
+            summary.append(f"• Average Deep Sleep: {recent['Deep (SWS) duration (min)'].mean():.0f} minutes")
+            summary.append(f"• Latest Sleep Score: {recent.iloc[0]['Sleep performance %']:.1f}%")
         
         return "\n".join(summary)
     
-    def _format_vitals_summary(self) -> str:
-        """Format Ben's vitals data summary."""
-        if 'ben_vitals' not in self.patient_data:
-            return "No vitals data available."
+    def _format_whoop_workout_summary(self) -> str:
+        """Format Amos's Whoop workout data summary."""
+        if 'whoop_workouts' not in self.patient_data:
+            return "No Whoop workout data available."
         
-        df = self.patient_data['ben_vitals']
+        df = self.patient_data['whoop_workouts']
         recent = df.head(5)
-        latest = df.iloc[0]
         
         summary = []
-        summary.append(f"🩺 **Vital Signs Summary (Last 5 Readings)**")
-        summary.append(f"• Latest BP: {latest['systolic_bp']}/{latest['diastolic_bp']} mmHg ({latest['date']})")
-        summary.append(f"• Average BP: {recent['systolic_bp'].mean():.0f}/{recent['diastolic_bp'].mean():.0f} mmHg")
-        summary.append(f"• Heart Rate: {latest['heart_rate']} bpm (avg: {recent['heart_rate'].mean():.0f})")
-        summary.append(f"• Weight: {latest['weight_kg']} kg")
-        summary.append(f"• Latest Glucose: {latest['glucose_mg_dl']} mg/dL")
-        summary.append(f"• BP Trend: {'↑ Elevated' if recent['systolic_bp'].mean() > 140 else '✓ Normal'}")
+        summary.append(f"💪 **Whoop Workout Summary (Last 5 Sessions)**")
+        if not recent.empty:
+            summary.append(f"• Average Strain: {recent['Strain'].mean():.1f}")
+            summary.append(f"• Total Workouts: {len(recent)}")
+            summary.append(f"• Sports: {', '.join(recent['Sport'].unique())}")
+            summary.append(f"• Latest Workout: {recent.iloc[0]['Sport']} (Strain: {recent.iloc[0]['Strain']:.1f})")
+        
+        return "\n".join(summary)
+    
+    def _format_visits_summary(self, query: str) -> str:
+        """Format medical visits summary."""
+        if 'visits' not in self.patient_data:
+            return "No visit data available."
+        
+        visits = self.patient_data['visits']
+        
+        summary = []
+        summary.append(f"🏥 **Recent Medical Visits ({len(visits)} total)**")
+        
+        # Show recent visits
+        for visit in visits[:3]:  # Show last 3 visits
+            summary.append(f"• {visit.get('visit_date', 'N/A')}: {visit.get('reason', 'N/A')} - {visit.get('diagnosis', 'N/A')}")
         
         return "\n".join(summary)
     
