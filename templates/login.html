@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Medical Assistant - Login{% endblock %}
+
+{% block body_class %}class="login-body"{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="logo">
+        <h1>🏥 Medical Assistant</h1>
+        <p>Professional Medical Information System</p>
+    </div>
+    
+    {% if error %}
+    <div class="error">❌ {{ error }}</div>
+    {% endif %}
+    
+    <form method="post" action="/login">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    
+    <div class="demo-info">
+        <h4>Demo Accounts:</h4>
+        <p><strong>demo</strong> / password</p>
+        <p><strong>doctor</strong> / secret123</p>
+        <p><strong>admin</strong> / admin2024</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h1>🏥 Medical Query Assistant</h1>
+    <div class="user-info">
+        <span>Welcome, <strong>{{ current_user }}</strong></span>
+        <a href="/logout">Logout</a>
+    </div>
+</div>
+
+<div class="disclaimer">
+    <strong>⚠️ Disclaimer:</strong> This tool provides general medical information for educational purposes only. 
+    Always consult healthcare professionals for medical advice, diagnosis, or treatment.
+</div>
+
+<!-- Medical Question Section -->
+<div class="container">
+    <h2>Medical Question</h2>
+    <div class="form-group">
+        <label for="question">Ask a medical question:</label>
+        <textarea id="question" rows="3" placeholder="e.g., What are the symptoms of diabetes?"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="context">Additional context (optional):</label>
+        <input type="text" id="context" placeholder="e.g., Patient is 45 years old">
+    </div>
+    <button onclick="askQuestion()">Get Medical Information</button>
+    <div class="loading" id="loading1">Processing your question...</div>
+    <div class="response" id="response1" style="display:none;"></div>
+</div>
+
+<!-- Symptom Checker Section -->
+<div class="container">
+    <h2>Symptom Checker</h2>
+    <div class="form-group">
+        <label for="symptoms">Symptoms (comma-separated):</label>
+        <input type="text" id="symptoms" placeholder="e.g., headache, fever, fatigue">
+    </div>
+    <div class="form-group">
+        <label for="age">Age (optional):</label>
+        <input type="number" id="age" min="0" max="120">
+    </div>
+    <div class="form-group">
+        <label for="gender">Gender (optional):</label>
+        <select id="gender">
+            <option value="">Select...</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+        </select>
+    </div>
+    <button onclick="checkSymptoms()">Analyze Symptoms</button>
+    <div class="loading" id="loading2">Analyzing symptoms...</div>
+    <div class="response" id="response2" style="display:none;"></div>
+</div>
+
+<!-- Patient Data Query Section -->
+<div class="container">
+    <h2>Patient Data Query</h2>
+    <div class="form-group">
+        <label for="patient_name">Patient Name or ID:</label>
+        <input type="text" id="patient_name" placeholder="e.g., Ben Smith, Sarah Jones, Mike Wilson">
+    </div>
+    <div class="form-group">
+        <label for="query_type">Data Type:</label>
+        <select id="query_type">
+            <option value="overview">Patient Overview</option>
+            <option value="sleep">Sleep Pattern</option>
+            <option value="vitals">Vital Signs</option>
+            <option value="labs">Lab Results</option>
+            <option value="medications">Medication Adherence</option>
+            <option value="activity">Physical Activity</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="days">Time Period (days):</label>
+        <input type="number" id="days" min="1" max="90" value="30">
+    </div>
+    <button onclick="queryPatientData()">Query Patient Data</button>
+    <div class="loading" id="loading3">Retrieving patient data...</div>
+    <div class="response" id="response3" style="display:none;"></div>
+</div>
+
+<!-- Demo Patients Info -->
+<div class="info-box">
+    <h3>📋 Available Demo Patients</h3>
+    <p><strong>Ben Smith</strong> - 34M, Hypertension, Type 2 Diabetes</p>
+    <p><strong>Sarah Jones</strong> - 28F, Asthma</p>
+    <p><strong>Mike Wilson</strong> - 45M, High Cholesterol</p>
+</div>
+{% endblock %}
