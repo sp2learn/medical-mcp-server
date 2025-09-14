@@ -229,14 +229,6 @@ async def patient_query(query: PatientQuery, request: Request):
         # - get_whoop_activity_data()
         # - get_whoop_physiological_cycle_data()
         # - get_whoop_journal_data()
-            response += f"  Last Visit: {info['last_visit']}\n\n"
-            response += f"Conditions: {', '.join(info['conditions'])}\n"
-            response += f"Medications: {', '.join(info['medications'])}\n\n"
-            response += f"Recent Summary:\n"
-            response += f"  Sleep: {data['sleep_summary']}\n"
-            response += f"  Activity: {data['activity_summary']}\n"
-        else:
-            response = f"Unknown query type: {query.query_type}"
         
         return {"response": response, "user": current_user}
         
