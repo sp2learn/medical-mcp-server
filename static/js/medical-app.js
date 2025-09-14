@@ -23,6 +23,11 @@ class MedicalApp {
     // Intelligent Medical Query Function
     async processIntelligentQuery() {
         const query = document.getElementById('medical_query').value;
+        const additionalContext = document.getElementById('additional_context').value;
+        const priority = document.getElementById('query_priority').value;
+        const followUpRequired = document.getElementById('follow_up_required').checked;
+        const detailedAnalysis = document.getElementById('detailed_analysis').checked;
+        const files = document.getElementById('medical_files').files;
         
         if (!query.trim()) {
             this.showAlert('Please enter your medical question');
@@ -33,15 +38,71 @@ class MedicalApp {
         this.hideResponse('response_main');
         
         try {
+            // Build enhanced query with context
+            let enhancedQuery = query;
+            
+            if (additionalContext.trim()) {
+                enhancedQuery += `\n\nAdditional Clinical Context: ${additionalContext}`;
+            }
+            
+            if (detailedAnalysis) {
+                enhancedQuery += '\n\nPlease provide detailed analysis with clinical insights.';
+            }
+            
+            if (followUpRequired) {
+                enhancedQuery += '\n\nFollow-up recommendations requested.';
+            }
+            
+            if (priority !== 'routine') {
+                enhancedQuery += `\n\nPriority: ${priority.toUpperCase()}`;
+            }
+            
+            // Handle file uploads (for now, just mention them)
+            if (files.length > 0) {
+                const fileNames = Array.from(files).map(f => f.name).join(', ');
+                enhancedQuery += `\n\nAttached Files: ${fileNames} (Note: File analysis not yet implemented)`;
+            }
+            
             const response = await this.makeRequest('/api/intelligent-query', {
-                query: query
+                query: enhancedQuery,
+                context: {
+                    priority: priority,
+                    followUp: followUpRequired,
+                    detailed: detailedAnalysis,
+                    fileCount: files.length
+                }
             });
             
             this.showResponse('response_main', response.response);
+            
+            // Show priority indicator if urgent/stat
+            if (priority !== 'routine') {
+                this.showPriorityIndicator(priority);
+            }
+            
         } catch (error) {
             this.showResponse('response_main', 'Error: ' + error.message);
         } finally {
             this.showLoading('loading_main', false);
+        }
+    }
+    
+    // Show priority indicator
+    showPriorityIndicator(priority) {
+        const responseElement = document.getElementById('response_main');
+        if (responseElement && priority !== 'routine') {
+            const priorityBadge = document.createElement('div');
+            priorityBadge.style.cssText = `
+                background: ${priority === 'stat' ? '#dc3545' : '#fd7e14'};
+                color: white;
+                padding: 5px 10px;
+                border-radius: 4px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                display: inline-block;
+            `;
+            priorityBadge.textContent = `${priority.toUpperCase()} PRIORITY`;
+            responseElement.insertBefore(priorityBadge, responseElement.firstChild);
         }
     }
 

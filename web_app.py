@@ -106,6 +106,7 @@ class PatientQuery(BaseModel):
 
 class IntelligentQuery(BaseModel):
     query: str
+    context: Optional[Dict[str, Any]] = None
 
 # Authentication endpoints
 @app.get("/login", response_class=HTMLResponse)
@@ -285,7 +286,7 @@ async def patient_query(query: PatientQuery, request: Request):
 
 @app.post("/api/intelligent-query")
 async def intelligent_query(query: IntelligentQuery, request: Request):
-    """Handle intelligent medical queries (protected)."""
+    """Handle intelligent medical queries with context (protected)."""
     current_user = get_current_user(request)
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -294,8 +295,29 @@ async def intelligent_query(query: IntelligentQuery, request: Request):
         raise HTTPException(status_code=503, detail="Intelligent assistant unavailable")
     
     try:
+        # Log query context for medical records
+        context_info = query.context or {}
+        priority = context_info.get('priority', 'routine')
+        
+        print(f"Medical Query - User: {current_user}, Priority: {priority}")
+        if context_info.get('followUp'):
+            print(f"Follow-up required for query: {query.query[:100]}...")
+        
         response = await intelligent_assistant.process_query(query.query)
-        return {"response": response, "user": current_user}
+        
+        # Add context metadata to response
+        enhanced_response = response
+        if priority != 'routine':
+            enhanced_response = f"[{priority.upper()} PRIORITY]\n\n{response}"
+        
+        if context_info.get('followUp'):
+            enhanced_response += "\n\n📋 **Follow-up Required**: Please schedule appropriate follow-up based on clinical findings."
+        
+        return {
+            "response": enhanced_response, 
+            "user": current_user,
+            "context": context_info
+        }
     except Exception as e:
         print(f"Intelligent query error: {e}")
         raise HTTPException(status_code=500, detail=f"Assistant error: {str(e)}")

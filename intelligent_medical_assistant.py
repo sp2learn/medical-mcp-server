@@ -43,33 +43,25 @@ class IntelligentMedicalAssistant:
         # Create context about available data and tools
         context = self._build_context()
         
-        # Enhanced prompt for intelligent routing
+        # Enhanced prompt for intelligent routing with concise responses
         enhanced_prompt = f"""
-You are an intelligent medical assistant with access to patient data and medical tools. 
+You are a medical assistant for healthcare providers with access to patient data and medical tools.
 
 AVAILABLE PATIENT DATA:
 {context}
 
-AVAILABLE TOOLS:
-1. Patient sleep analysis (sleep patterns, quality, duration)
-2. Vital signs analysis (blood pressure, heart rate, temperature, weight)
-3. Lab results analysis (glucose, HbA1c, cholesterol)
-4. Medication adherence tracking
-5. Physical activity analysis
-6. General medical knowledge queries
-7. Symptom analysis
-
 USER QUERY: "{query}"
 
-INSTRUCTIONS:
-1. Analyze the query to understand what the user is asking
-2. If it's about a specific patient (like Ben, Sarah, Mike), use their actual data
-3. If it's a general medical question, provide evidence-based information
-4. If it's about patient data, extract relevant information and provide insights
-5. Always include medical disclaimers for patient-specific information
-6. Be conversational but professional
+RESPONSE GUIDELINES:
+1. Be CONCISE and SUMMARIZED unless specifically asked for detailed information
+2. For patient data queries: Provide key metrics and brief clinical insights
+3. For general medical questions: Give essential information in bullet points
+4. For patient-specific data: Extract relevant information with brief analysis
+5. Always include brief medical disclaimers
+6. Use clinical terminology appropriate for medical providers
+7. If asked for "detailed" or "comprehensive" analysis, then provide full information
 
-Please provide a comprehensive response based on the available data and your medical knowledge.
+Provide a focused, professional response suitable for busy medical providers.
 """
 
         try:
