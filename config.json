@@ -1,0 +1,35 @@
+{
+  "server": {
+    "name": "medical-query-server",
+    "version": "1.0.0",
+    "description": "Patient-Centric Medical Intelligence System"
+  },
+  "tools": {
+    "general": {
+      "enabled": true,
+      "rate_limit_per_minute": 10
+    },
+    "patient_data": {
+      "enabled": true,
+      "rate_limit_per_minute": 20,
+      "requires_patient_access": true
+    }
+  },
+  "features": {
+    "authentication_required": true,
+    "logging_enabled": true,
+    "rate_limiting_enabled": true,
+    "patient_data_access": true
+  },
+  "data_sources": {
+    "simulated_data": true,
+    "ehr_integration": false,
+    "wearable_devices": false,
+    "lab_systems": false
+  },
+  "ai_models": {
+    "primary": "gemini",
+    "fallback": "none",
+    "medical_specialization": true
+  }
+}
