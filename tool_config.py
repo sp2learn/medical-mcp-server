@@ -14,130 +14,18 @@ class ToolConfig:
         self._initialize_tools()
     
     def _initialize_tools(self):
-        """Initialize all tool configurations."""
-        
-        # General Medical Tools
-        self.tools["medical_query"] = {
+        """Initialize all tool configurations."""              
+        self.tools["get_patient_visits"] = {
             "definition": Tool(
-                name="medical_query",
-                description="Answer medical questions with professional, evidence-based responses",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "question": {
-                            "type": "string",
-                            "description": "The medical question to answer"
-                        },
-                        "context": {
-                            "type": "string", 
-                            "description": "Additional context or patient information (optional)",
-                            "default": ""
-                        }
-                    },
-                    "required": ["question"]
-                }
-            ),
-            "category": "general",
-            "enabled": True,
-            "rate_limit": 10,  # requests per minute
-            "requires_auth": True
-        }
-        
-        self.tools["symptom_checker"] = {
-            "definition": Tool(
-                name="symptom_checker",
-                description="Analyze symptoms and provide general guidance (not a diagnosis)",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "symptoms": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "List of symptoms to analyze"
-                        },
-                        "age": {
-                            "type": "integer",
-                            "description": "Patient age (optional)",
-                            "minimum": 0,
-                            "maximum": 120
-                        },
-                        "gender": {
-                            "type": "string",
-                            "description": "Patient gender (optional)",
-                            "enum": ["male", "female", "other"]
-                        }
-                    },
-                    "required": ["symptoms"]
-                }
-            ),
-            "category": "general",
-            "enabled": True,
-            "rate_limit": 15,
-            "requires_auth": True
-        }
-        
-        # Patient Data Tools
-        self.tools["get_patient_sleep_pattern"] = {
-            "definition": Tool(
-                name="get_patient_sleep_pattern",
-                description="Get a patient's sleep pattern and analysis for specified time period",
+                name="get_patient_visits",
+                description="Get a patient's visit history, observations, and previous diagnoses",
                 inputSchema={
                     "type": "object",
                     "properties": {
                         "patient_identifier": {
-                            "type": "string",
-                            "description": "Patient name or ID (e.g., 'Ben Smith' or 'ben_smith')"
-                        },
-                        "days": {
-                            "type": "integer",
-                            "description": "Number of days to analyze (default: 30)",
-                            "default": 30,
-                            "minimum": 1,
-                            "maximum": 90
-                        }
-                    },
-                    "required": ["patient_identifier"]
-                }
-            ),
-            "category": "patient_data",
-            "enabled": True,
-            "rate_limit": 20,
-            "requires_auth": True,
-            "requires_patient_access": True
-        }
-        
-        self.tools["get_patient_vitals"] = {
-            "definition": Tool(
-                name="get_patient_vitals",
-                description="Get a patient's vital signs summary and recent readings",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "patient_identifier": {
-                            "type": "string",
-                            "description": "Patient name or ID (e.g., 'Ben Smith' or 'ben_smith')"
-                        }
-                    },
-                    "required": ["patient_identifier"]
-                }
-            ),
-            "category": "patient_data",
-            "enabled": True,
-            "rate_limit": 20,
-            "requires_auth": True,
-            "requires_patient_access": True
-        }
-        
-        self.tools["get_patient_labs"] = {
-            "definition": Tool(
-                name="get_patient_labs",
-                description="Get a patient's laboratory results and trends",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "patient_identifier": {
-                            "type": "string",
-                            "description": "Patient name or ID (e.g., 'Ben Smith' or 'ben_smith')"
+                            "first_name": "string",
+                            "last_name": "string",
+                            "patient_id": "integer"
                         }
                     },
                     "required": ["patient_identifier"]
@@ -146,57 +34,6 @@ class ToolConfig:
             "category": "patient_data",
             "enabled": True,
             "rate_limit": 15,
-            "requires_auth": True,
-            "requires_patient_access": True
-        }
-        
-        self.tools["get_medication_adherence"] = {
-            "definition": Tool(
-                name="get_medication_adherence",
-                description="Get a patient's medication adherence data and compliance rates",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "patient_identifier": {
-                            "type": "string",
-                            "description": "Patient name or ID (e.g., 'Ben Smith' or 'ben_smith')"
-                        }
-                    },
-                    "required": ["patient_identifier"]
-                }
-            ),
-            "category": "patient_data",
-            "enabled": True,
-            "rate_limit": 15,
-            "requires_auth": True,
-            "requires_patient_access": True
-        }
-        
-        self.tools["get_patient_activity"] = {
-            "definition": Tool(
-                name="get_patient_activity",
-                description="Get a patient's physical activity summary and trends",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "patient_identifier": {
-                            "type": "string",
-                            "description": "Patient name or ID (e.g., 'Ben Smith' or 'ben_smith')"
-                        },
-                        "days": {
-                            "type": "integer",
-                            "description": "Number of days to analyze (default: 30)",
-                            "default": 30,
-                            "minimum": 1,
-                            "maximum": 90
-                        }
-                    },
-                    "required": ["patient_identifier"]
-                }
-            ),
-            "category": "patient_data",
-            "enabled": True,
-            "rate_limit": 20,
             "requires_auth": True,
             "requires_patient_access": True
         }
@@ -209,8 +46,9 @@ class ToolConfig:
                     "type": "object",
                     "properties": {
                         "patient_identifier": {
-                            "type": "string",
-                            "description": "Patient name or ID (e.g., 'Ben Smith' or 'ben_smith')"
+                            "first_name": "string",
+                            "last_name": "string",
+                            "patient_id": "integer"
                         }
                     },
                     "required": ["patient_identifier"]
@@ -222,13 +60,134 @@ class ToolConfig:
             "requires_auth": True,
             "requires_patient_access": True
         }
+
+        self.tools["get_patient_whoop_sleep_data"] = {
+            "definition": Tool(
+                name="get_patient_whoop_sleep_data",
+                description="Get a patient's sleep data from Whoop for a specific period of time",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "patient_identifier": {
+                            "first_name": "string",
+                            "last_name": "string",
+                            "patient_id": "integer"
+                        },
+                        "days": {
+                            "type": "integer",
+                            "description": "Number of days to analyze (default: 30)",
+                            "default": 30,
+                            "minimum": 1,
+                            "maximum": 90
+                        }
+                    },
+                    "required": ["patient_identifier"]
+                }
+            ),
+            "category": "patient_data",
+            "enabled": True,
+            "rate_limit": 20,
+            "requires_auth": True,
+            "requires_patient_access": True
+        }
+
+        self.tools["get_patient_whoop_activity_data"] = {
+            "definition": Tool(
+                name="get_patient_whoop_activity_data",
+                description="Get a patient's activity/workout data from Whoop for a specific period of time",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "patient_identifier": {
+                            "first_name": "string",
+                            "last_name": "string",
+                            "patient_id": "integer"
+                        },
+                        "days": {
+                            "type": "integer",
+                            "description": "Number of days to analyze (default: 30)",
+                            "default": 30,
+                            "minimum": 1,
+                            "maximum": 90
+                        }
+                    },
+                    "required": ["patient_identifier"]
+                }
+            ),
+            "category": "patient_data",
+            "enabled": True,
+            "rate_limit": 20,
+            "requires_auth": True,
+            "requires_patient_access": True
+        }
+
+        
+        self.tools["get_patient_whoop_physiological_cycle_data"] = {
+            "definition": Tool(
+                name="get_patient_whoop_physiological_cycle_data",
+                description="Get a patient's physiological cycle data (heart rate, recovery/strain, blood measurements, sleep score, etc) from Whoop for a specific period of time",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "patient_identifier": {
+                            "first_name": "string",
+                            "last_name": "string",
+                            "patient_id": "integer"
+                        },
+                        "days": {
+                            "type": "integer",
+                            "description": "Number of days to analyze (default: 30)",
+                            "default": 30,
+                            "minimum": 1,
+                            "maximum": 90
+                        }
+                    },
+                    "required": ["patient_identifier"]
+                }
+            ),
+            "category": "patient_data",
+            "enabled": True,
+            "rate_limit": 20,
+            "requires_auth": True,
+            "requires_patient_access": True
+        }
+
+         
+        self.tools["get_patient_whoop_journal_data"] = {
+            "definition": Tool(
+                name="get_patient_whoop_journal_data",
+                description="Get a patient's journal data from Whoop for a specific period of time",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "patient_identifier": {
+                            "first_name": "string",
+                            "last_name": "string",
+                            "patient_id": "integer"
+                        },
+                        "days": {
+                            "type": "integer",
+                            "description": "Number of days to analyze (default: 30)",
+                            "default": 30,
+                            "minimum": 1,
+                            "maximum": 90
+                        }
+                    },
+                    "required": ["patient_identifier"]
+                }
+            ),
+            "category": "patient_data",
+            "enabled": True,
+            "rate_limit": 20,
+            "requires_auth": True,
+            "requires_patient_access": True
+        }
+
         
         # Set up categories
         self.tool_categories = {
-            "general": ["medical_query", "symptom_checker"],
             "patient_data": [
-                "get_patient_sleep_pattern", "get_patient_vitals", "get_patient_labs",
-                "get_medication_adherence", "get_patient_activity", "get_patient_overview"
+                "get_patient_visits", "get_patient_overview", "get_patient_whoop_sleep_data", "get_patient_whoop_activity_data", "get_patient_whoop_physiological_cycle_data", "get_patient_whoop_journal_data"
             ]
         }
     
