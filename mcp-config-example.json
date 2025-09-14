@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "medical-query": {
+      "command": "python",
+      "args": ["path/to/medical-mcp-server/server.py"],
+      "env": {
+        "MEDICAL_MODEL": "gemini"
+      },
+      "disabled": false,
+      "autoApprove": ["medical_query", "symptom_checker"]
+    }
+  }
+}
