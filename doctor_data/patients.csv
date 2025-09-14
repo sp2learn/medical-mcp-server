@@ -1,0 +1,4 @@
+patient_id,first_name,last_name,age,gender,height_cm,weight_kg,blood_type,conditions,medications,last_visit,email
+1,Amos,Appendino,24,male,180,75,B,"migraines,knee pain","n/a",2025-05-14,amos.appendino@email.com
+2,Ben,Smith,34,male,175,78,O+,"hypertension,type_2_diabetes","metformin,lisinopril",2024-01-15,ben.smith@email.com
+3,Sarah,Jones,28,female,162,58,A+,asthma,albuterol,2024-08-20,sarah.jones@email.com

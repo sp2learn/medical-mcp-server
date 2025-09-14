@@ -1,0 +1,141 @@
+[
+    {
+      "visit_id": "1-2024-06-14",
+      "patient_id": 1,
+      "patient_name": "Amos Appendino",
+      "visit_date": "2024-06-14",
+      "visit_type": "routine_checkup",
+      "vitals": {
+        "temperature": 99.2,
+        "heart_rate": 83,
+        "blood_pressure": "137/81",
+        "respiratory_rate": 19,
+        "weight_kg": 73.2
+      },
+      "chief_complaint": "Occasional headaches",
+      "issues_discussed": [
+        "mild headaches",
+        "joint discomfort"
+      ],
+      "doctor_observations": "Patient reports intermittent headaches, possibly stress-related. Mild discomfort in right knee during physical activity.",
+      "follow_up_needed": false,
+      "next_appointment": "2025-05-14"
+    },
+    {
+      "visit_id": "1-2025-05-14",
+      "patient_id": 1,
+      "patient_name": "Amos Appendino",
+      "visit_date": "2025-05-14",
+      "visit_type": "follow_up",
+      "vitals": {
+        "temperature": 99.0,
+        "heart_rate": 75,
+        "blood_pressure": "131/82",
+        "respiratory_rate": 17,
+        "weight_kg": 76.1
+      },
+      "chief_complaint": "Recurring migraines and knee pain",
+      "issues_discussed": [
+        "increased migraine frequency",
+        "persistent knee pain",
+        "impact on daily activities"
+      ],
+      "doctor_observations": "Migraines have increased in frequency over past 6 months. Right knee shows mild inflammation, likely overuse injury. Recommend lifestyle modifications and monitoring.",
+      "follow_up_needed": true,
+      "next_appointment": null
+    },
+    {
+      "visit_id": "2-2023-06-14",
+      "patient_id": 2,
+      "patient_name": "Ben Smith",
+      "visit_date": "2023-06-14",
+      "visit_type": "routine_checkup",
+      "vitals": {
+        "temperature": 98.3,
+        "heart_rate": 72,
+        "blood_pressure": "151/100",
+        "respiratory_rate": 19,
+        "weight_kg": 76.7
+      },
+      "chief_complaint": "Routine diabetes and blood pressure management",
+      "issues_discussed": [
+        "blood sugar control",
+        "blood pressure readings",
+        "medication adherence"
+      ],
+      "doctor_observations": "Blood pressure slightly elevated but improving with medication. HbA1c levels within acceptable range. Patient adherent to treatment plan.",
+      "follow_up_needed": false,
+      "next_appointment": "2024-01-15"
+    },
+    {
+      "visit_id": "2-2024-01-15",
+      "patient_id": 2,
+      "patient_name": "Ben Smith",
+      "visit_date": "2024-01-15",
+      "visit_type": "follow_up",
+      "vitals": {
+        "temperature": 99.2,
+        "heart_rate": 88,
+        "blood_pressure": "158/101",
+        "respiratory_rate": 18,
+        "weight_kg": 77.7
+      },
+      "chief_complaint": "Follow-up for diabetes and hypertension",
+      "issues_discussed": [
+        "recent blood work results",
+        "medication side effects",
+        "dietary habits",
+        "exercise routine"
+      ],
+      "doctor_observations": "Good control of diabetes with current metformin dosage. Blood pressure well-controlled on lisinopril. Recommend continued current treatment with regular monitoring.",
+      "follow_up_needed": true,
+      "next_appointment": null
+    },
+    {
+      "visit_id": "3-2023-12-20",
+      "patient_id": 3,
+      "patient_name": "Sarah Jones",
+      "visit_date": "2023-12-20",
+      "visit_type": "routine_checkup",
+      "vitals": {
+        "temperature": 98.4,
+        "heart_rate": 81,
+        "blood_pressure": "130/85",
+        "respiratory_rate": 20,
+        "weight_kg": 56.3
+      },
+      "chief_complaint": "Seasonal breathing difficulties",
+      "issues_discussed": [
+        "mild shortness of breath",
+        "seasonal allergies",
+        "inhaler usage"
+      ],
+      "doctor_observations": "Patient experiencing mild respiratory symptoms, likely seasonal asthma. Lung sounds clear. Current albuterol usage appropriate.",
+      "follow_up_needed": false,
+      "next_appointment": "2024-08-20"
+    },
+    {
+      "visit_id": "3-2024-08-20",
+      "patient_id": 3,
+      "patient_name": "Sarah Jones",
+      "visit_date": "2024-08-20",
+      "visit_type": "follow_up",
+      "vitals": {
+        "temperature": 98.8,
+        "heart_rate": 75,
+        "blood_pressure": "122/81",
+        "respiratory_rate": 21,
+        "weight_kg": 57.3
+      },
+      "chief_complaint": "Asthma management and recent flare-ups",
+      "issues_discussed": [
+        "asthma symptoms",
+        "trigger identification",
+        "inhaler technique review",
+        "peak flow measurements"
+      ],
+      "doctor_observations": "Asthma well-controlled overall. Patient demonstrates proper inhaler technique. Peak flow readings within normal range. Continue current albuterol as needed.",
+      "follow_up_needed": true,
+      "next_appointment": null
+    }
+  ]
