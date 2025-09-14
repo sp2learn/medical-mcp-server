@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from medical_client import MedicalClient
 from patient_data_manager import PatientDataManager
 from intelligent_medical_assistant import IntelligentMedicalAssistant
+from tool_provider_manager import tool_provider_manager, ToolProvider
 
 # Load environment variables
 load_dotenv()
@@ -152,11 +153,19 @@ async def home(request: Request):
     # Get current time in a user-friendly format
     current_time = get_formatted_timestamp()
     
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "current_user": current_user,
-        "current_time": current_time
-    })
+    # Check if user is admin
+    if current_user == "admin":
+        return templates.TemplateResponse("admin_dashboard.html", {
+            "request": request,
+            "current_user": current_user,
+            "current_time": current_time
+        })
+    else:
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "current_user": current_user,
+            "current_time": current_time
+        })
 
 @app.post("/api/medical-query")
 async def medical_query(query: MedicalQuery, request: Request):
@@ -322,6 +331,92 @@ async def intelligent_query(query: IntelligentQuery, request: Request):
         print(f"Intelligent query error: {e}")
         raise HTTPException(status_code=500, detail=f"Assistant error: {str(e)}")
 
+# Admin API Endpoints
+@app.get("/api/admin/providers")
+async def get_providers(request: Request):
+    """Get all tool providers (admin only)."""
+    current_user = get_current_user(request)
+    if current_user != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    providers = tool_provider_manager.list_providers()
+    return {"providers": [p.dict() for p in providers]}
+
+@app.post("/api/admin/providers")
+async def add_provider(provider_data: dict, request: Request):
+    """Add new tool provider (admin only)."""
+    current_user = get_current_user(request)
+    if current_user != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # Create provider object
+        provider = ToolProvider(**provider_data)
+        success = tool_provider_manager.add_provider(provider)
+        
+        if success:
+            return {"success": True, "message": "Provider added successfully"}
+        else:
+            return {"success": False, "error": "Provider ID already exists"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.put("/api/admin/providers/{provider_id}")
+async def update_provider(provider_id: str, updates: dict, request: Request):
+    """Update tool provider (admin only)."""
+    current_user = get_current_user(request)
+    if current_user != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    success = tool_provider_manager.update_provider(provider_id, updates)
+    if success:
+        return {"success": True, "message": "Provider updated successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+@app.delete("/api/admin/providers/{provider_id}")
+async def delete_provider(provider_id: str, request: Request):
+    """Delete tool provider (admin only)."""
+    current_user = get_current_user(request)
+    if current_user != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    success = tool_provider_manager.delete_provider(provider_id)
+    if success:
+        return {"success": True, "message": "Provider deleted successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+@app.post("/api/admin/providers/{provider_id}/test")
+async def test_provider(provider_id: str, request: Request):
+    """Test tool provider connection (admin only)."""
+    current_user = get_current_user(request)
+    if current_user != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = tool_provider_manager.test_provider(provider_id)
+    return result
+
+@app.get("/api/admin/statistics")
+async def get_statistics(request: Request):
+    """Get system statistics (admin only)."""
+    current_user = get_current_user(request)
+    if current_user != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    stats = tool_provider_manager.get_provider_stats()
+    return {"stats": stats}
+
+@app.post("/api/admin/generate-api-key")
+async def generate_api_key(request: Request):
+    """Generate new API key (admin only)."""
+    current_user = get_current_user(request)
+    if current_user != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    api_key = tool_provider_manager.generate_api_key()
+    return {"api_key": api_key}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -330,7 +425,8 @@ async def health_check():
             "status": "healthy", 
             "model": medical_client.model_type,
             "patients": len(patient_manager.patients),
-            "assistant": "active"
+            "assistant": "active",
+            "tool_providers": len(tool_provider_manager.providers)
         }
     else:
         return {"status": "degraded", "services": "unavailable"}
