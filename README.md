@@ -5,23 +5,27 @@ A comprehensive **Patient-Centric Medical Intelligence System** that combines MC
 ## ✨ Key Features
 
 ### 🤖 **Intelligent Medical Assistant**
+
 - **Natural Language Processing** - Ask questions like "What is Ben's sleep summary?"
 - **Automatic Tool Routing** - AI decides which patient data to access
 - **Conversational Interface** - Single input for all medical queries
 - **Professional Medical Responses** - Evidence-based information with disclaimers
 
 ### 👥 **Patient Data Management**
+
 - **Real Patient Data** - CSV-based patient records and biometrics
 - **Comprehensive Tracking** - Sleep patterns, vital signs, lab results, medications
 - **Trend Analysis** - Historical data analysis and insights
 - **Multi-Patient Support** - Manage multiple patient records
 
 ### 🔧 **Dual Architecture**
+
 - **MCP Server** - Integration with Kiro IDE and other MCP clients
 - **Web Application** - Professional web interface with authentication
 - **RESTful API** - Programmatic access to medical data and insights
 
 ### 📊 **Available Patient Data**
+
 - **Ben Smith** (34M) - Hypertension, Type 2 Diabetes
   - 15 days of detailed sleep data (duration, quality, efficiency)
   - Vital signs tracking (BP, heart rate, glucose, weight)
@@ -60,6 +64,7 @@ DISPLAY_TIMEZONE=America/New_York
 ### 3. **Run the System**
 
 **Web Application:**
+
 ```bash
 python web_app.py
 # Visit: http://localhost:8000
@@ -67,6 +72,7 @@ python web_app.py
 ```
 
 **MCP Server:**
+
 ```bash
 python server.py
 # For integration with Kiro IDE or other MCP clients
@@ -183,6 +189,7 @@ medical-mcp-server/
 ## 🌐 Deployment
 
 ### **Local Development**
+
 ```bash
 source venv/bin/activate
 python web_app.py
@@ -190,6 +197,7 @@ python web_app.py
 ```
 
 ### **Cloud Deployment (Render)**
+
 1. Push to GitHub
 2. Connect repository to Render
 3. Set environment variables:
@@ -198,6 +206,7 @@ python web_app.py
 4. Deploy automatically
 
 ### **Docker Deployment**
+
 ```bash
 # Build and run with Docker Compose
 docker-compose up --build
@@ -210,12 +219,14 @@ docker run -p 8000:8000 --env-file .env medical-mcp-server
 ## 🔐 Authentication & Security
 
 ### **Web Interface**
+
 - **Session-based authentication** with secure cookies
 - **Role-based access** (demo, doctor, admin accounts)
 - **24-hour session expiration**
 - **HTTPS ready** for production deployment
 
 ### **Demo Accounts**
+
 | Username | Password | Role | Description |
 |----------|----------|------|-------------|
 | `demo` | `password` | Patient | Basic demo access |
@@ -225,18 +236,21 @@ docker run -p 8000:8000 --env-file .env medical-mcp-server
 ## 📈 Patient Data Format
 
 ### **Patient Demographics (`patients.csv`)**
+
 ```csv
 patient_id,first_name,last_name,age,gender,conditions,medications,last_visit
 ben_smith,Ben,Smith,34,male,"hypertension,type_2_diabetes","metformin,lisinopril",2024-01-15
 ```
 
 ### **Sleep Data (`ben_sleep_data.csv`)**
+
 ```csv
 date,sleep_hours,bedtime,wake_time,sleep_quality,deep_sleep_minutes,rem_sleep_minutes
 2024-09-14,7.2,22:30,05:42,good,85,92
 ```
 
 ### **Vital Signs (`ben_vitals_data.csv`)**
+
 ```csv
 date,systolic_bp,diastolic_bp,heart_rate,temperature_f,weight_kg,glucose_mg_dl
 2024-09-14,142,88,72,98.6,78.2,156
