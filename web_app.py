@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from medical_client import MedicalClient
+from patient_data_manager import PatientDataManager
 
 # Load environment variables
 load_dotenv()
@@ -23,13 +24,16 @@ load_dotenv()
 # Initialize FastAPI app
 app = FastAPI(title="Medical Query API", description="Medical information web service")
 
-# Initialize medical client with error handling
+# Initialize medical client and patient manager with error handling
 try:
     medical_client = MedicalClient()
+    patient_manager = PatientDataManager()
     print(f"✅ Medical client initialized with model: {medical_client.model_type}")
+    print(f"✅ Patient data manager initialized with {len(patient_manager.patients)} patients")
 except Exception as e:
-    print(f"❌ Failed to initialize medical client: {e}")
+    print(f"❌ Failed to initialize services: {e}")
     medical_client = None
+    patient_manager = None
 
 # Simple in-memory session store (use Redis/DB in production)
 sessions = {}
@@ -72,6 +76,11 @@ class SymptomCheck(BaseModel):
     symptoms: List[str]
     age: Optional[int] = None
     gender: Optional[str] = None
+
+class PatientQuery(BaseModel):
+    patient_identifier: str
+    query_type: str  # sleep, vitals, labs, medications, activity, overview
+    days: Optional[int] = 30
 
 # Authentication endpoints
 @app.get("/login", response_class=HTMLResponse)
@@ -372,6 +381,39 @@ async def home(request: Request):
             <div class="response" id="response2" style="display:none;"></div>
         </div>
 
+        <div class="container">
+            <h2>Patient Data Query</h2>
+            <div class="form-group">
+                <label for="patient_name">Patient Name or ID:</label>
+                <input type="text" id="patient_name" placeholder="e.g., Ben Smith, Sarah Jones, Mike Wilson">
+            </div>
+            <div class="form-group">
+                <label for="query_type">Data Type:</label>
+                <select id="query_type">
+                    <option value="overview">Patient Overview</option>
+                    <option value="sleep">Sleep Pattern</option>
+                    <option value="vitals">Vital Signs</option>
+                    <option value="labs">Lab Results</option>
+                    <option value="medications">Medication Adherence</option>
+                    <option value="activity">Physical Activity</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="days">Time Period (days):</label>
+                <input type="number" id="days" min="1" max="90" value="30">
+            </div>
+            <button onclick="queryPatientData()">Query Patient Data</button>
+            <div class="loading" id="loading3">Retrieving patient data...</div>
+            <div class="response" id="response3" style="display:none;"></div>
+        </div>
+
+        <div class="container" style="background: #e3f2fd;">
+            <h3>📋 Available Demo Patients</h3>
+            <p><strong>Ben Smith</strong> - 34M, Hypertension, Type 2 Diabetes</p>
+            <p><strong>Sarah Jones</strong> - 28F, Asthma</p>
+            <p><strong>Mike Wilson</strong> - 45M, High Cholesterol</p>
+        </div>
+
         <script>
             async function askQuestion() {
                 const question = document.getElementById('question').value;
@@ -439,6 +481,43 @@ async def home(request: Request):
                     document.getElementById('loading2').style.display = 'none';
                 }
             }
+            
+            async function queryPatientData() {
+                const patientName = document.getElementById('patient_name').value;
+                const queryType = document.getElementById('query_type').value;
+                const days = document.getElementById('days').value;
+                
+                if (!patientName.trim()) {
+                    alert('Please enter a patient name or ID');
+                    return;
+                }
+                
+                document.getElementById('loading3').style.display = 'block';
+                document.getElementById('response3').style.display = 'none';
+                
+                try {
+                    const payload = { 
+                        patient_identifier: patientName,
+                        query_type: queryType,
+                        days: parseInt(days) || 30
+                    };
+                    
+                    const response = await fetch('/api/patient-query', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    const data = await response.json();
+                    document.getElementById('response3').textContent = data.response;
+                    document.getElementById('response3').style.display = 'block';
+                } catch (error) {
+                    document.getElementById('response3').textContent = 'Error: ' + error.message;
+                    document.getElementById('response3').style.display = 'block';
+                } finally {
+                    document.getElementById('loading3').style.display = 'none';
+                }
+            }
         </script>
     </body>
     </html>
@@ -478,13 +557,109 @@ async def symptom_check(check: SymptomCheck, request: Request):
         print(f"Symptom check error: {e}")
         raise HTTPException(status_code=500, detail=f"Medical service error: {str(e)}")
 
+@app.post("/api/patient-query")
+async def patient_query(query: PatientQuery, request: Request):
+    """Handle patient data queries (protected)."""
+    current_user = get_current_user(request)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    if not patient_manager:
+        raise HTTPException(status_code=503, detail="Patient data service unavailable")
+    
+    try:
+        # Find patient
+        patient = patient_manager.find_patient(query.patient_identifier)
+        if not patient:
+            available_patients = ", ".join([p["name"] for p in patient_manager.patients.values()])
+            return {"response": f"Patient '{query.patient_identifier}' not found. Available patients: {available_patients}"}
+        
+        # Route to appropriate data retrieval method
+        if query.query_type == "sleep":
+            data = patient_manager.get_sleep_pattern(patient["id"], query.days)
+            response = f"Sleep Pattern Analysis for {data['patient_name']}\n"
+            response += f"Period: {data['period']}\n"
+            response += f"Average Sleep: {data['average_sleep_hours']} hours per night\n\n"
+            response += f"Sleep Quality Distribution:\n"
+            for quality, count in data['sleep_quality_distribution'].items():
+                response += f"  {quality.title()}: {count} nights\n"
+            response += f"\nSummary: {data['summary']}"
+            
+        elif query.query_type == "vitals":
+            data = patient_manager.get_vitals_summary(patient["id"])
+            response = f"Vital Signs Summary for {data['patient_name']}\n\n"
+            if data['latest_reading']:
+                latest = data['latest_reading']
+                response += f"Latest Reading ({latest['date']}):\n"
+                response += f"  Blood Pressure: {latest['blood_pressure']['systolic']}/{latest['blood_pressure']['diastolic']} mmHg\n"
+                response += f"  Heart Rate: {latest['heart_rate']} bpm\n"
+                response += f"  Temperature: {latest['temperature']}°F\n"
+                response += f"  Weight: {latest['weight']} lbs\n\n"
+            response += f"Average BP: {data['average_bp']} mmHg\n"
+            response += f"Known Conditions: {', '.join(data['conditions'])}"
+            
+        elif query.query_type == "labs":
+            data = patient_manager.get_lab_results(patient["id"])
+            response = f"Laboratory Results for {data['patient_name']}\n\n"
+            if data['latest_labs']:
+                latest = data['latest_labs']
+                response += f"Latest Labs ({latest['date']}):\n"
+                response += f"  Glucose: {latest['glucose']} mg/dL\n"
+                response += f"  HbA1c: {latest['hba1c']}%\n"
+                response += f"  Total Cholesterol: {latest['cholesterol']['total']} mg/dL\n"
+                response += f"  LDL: {latest['cholesterol']['ldl']} mg/dL\n"
+                response += f"  HDL: {latest['cholesterol']['hdl']} mg/dL\n"
+                response += f"  Creatinine: {latest['kidney_function']['creatinine']} mg/dL\n"
+                
+        elif query.query_type == "medications":
+            data = patient_manager.get_medication_adherence(patient["id"])
+            response = f"Medication Adherence for {data['patient_name']}\n\n"
+            response += f"Overall Adherence Rate: {data['overall_adherence']}%\n\n"
+            for med in data['medications']:
+                response += f"{med['medication'].title()}:\n"
+                response += f"  Adherence Rate: {med['adherence_rate']}%\n"
+                response += f"  Prescribed: {med['prescribed_dose']}\n\n"
+                
+        elif query.query_type == "activity":
+            data = patient_manager.get_activity_summary(patient["id"], query.days)
+            response = f"Physical Activity Summary for {data['patient_name']}\n"
+            response += f"Period: {data['period']}\n\n"
+            response += f"Average Daily Steps: {data['average_daily_steps']:,}\n"
+            response += f"Average Active Minutes: {data['average_active_minutes']} minutes/day\n"
+            
+        elif query.query_type == "overview":
+            data = patient_manager.get_patient_overview(patient["id"])
+            info = data['patient_info']
+            response = f"Patient Overview: {info['name']}\n\n"
+            response += f"Demographics:\n"
+            response += f"  Age: {info['age']} years\n"
+            response += f"  Gender: {info['gender'].title()}\n"
+            response += f"  Last Visit: {info['last_visit']}\n\n"
+            response += f"Conditions: {', '.join(info['conditions'])}\n"
+            response += f"Medications: {', '.join(info['medications'])}\n\n"
+            response += f"Recent Summary:\n"
+            response += f"  Sleep: {data['sleep_summary']}\n"
+            response += f"  Activity: {data['activity_summary']}\n"
+        else:
+            response = f"Unknown query type: {query.query_type}"
+        
+        return {"response": response, "user": current_user}
+        
+    except Exception as e:
+        print(f"Patient query error: {e}")
+        raise HTTPException(status_code=500, detail=f"Patient data service error: {str(e)}")
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    if medical_client:
-        return {"status": "healthy", "model": medical_client.model_type}
+    if medical_client and patient_manager:
+        return {
+            "status": "healthy", 
+            "model": medical_client.model_type,
+            "patients": len(patient_manager.patients)
+        }
     else:
-        return {"status": "degraded", "model": "unavailable"}
+        return {"status": "degraded", "services": "unavailable"}
 
 if __name__ == "__main__":
     import uvicorn
