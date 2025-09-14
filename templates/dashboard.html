@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="header">
-    <h1>🏥 Medical Query Assistant</h1>
+    <h1>🏥 MCP Server for Medical Providers</h1>
     <div class="user-info">
         <span>Welcome, <strong>{{ current_user }}</strong></span>
         <a href="/logout">Logout</a>
@@ -24,27 +24,73 @@
 
 <!-- Intelligent Medical Assistant -->
 <div class="container">
-    <h2>🤖 Intelligent Medical Assistant</h2>
+    <h2>🤖 Medical Provider Assistant</h2>
     <p style="color: #666; margin-bottom: 20px;">
-        Ask me anything about medical conditions, patient data, or health information.
-        I can access patient records and provide comprehensive medical insights.
+        Query patient data, medical conditions, and health information.
+        Responses are concise and clinical unless you request detailed analysis.
     </p>
 
     <div class="form-group">
         <label for="medical_query">Your Medical Query:</label>
         <textarea id="medical_query" rows="4" placeholder="Examples:
-• What is Ben's sleep summary for the past week?
-• Show me Ben's latest blood pressure readings
-• What are the symptoms of diabetes?
-• Analyze Ben's vital signs trends
-• What medications is Sarah taking?"></textarea>
+• Ben's sleep summary
+• Ben's latest BP readings  
+• Diabetes symptoms
+• Ben's vitals analysis
+• Sarah's medications
+• Add 'detailed' for comprehensive analysis"></textarea>
+    </div>
+    
+    <!-- Additional Context Section -->
+    <div class="context-section" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #007bff;">
+        <h4 style="margin-top: 0; color: #495057;">📋 Additional Context & Files</h4>
+        
+        <div class="form-group">
+            <label for="additional_context">Clinical Context (Optional):</label>
+            <textarea id="additional_context" rows="3" placeholder="Examples:
+• Patient complained of chest pain during exercise
+• Recent lab results show elevated glucose levels
+• Family history of cardiovascular disease
+• Patient started new medication since last visit
+• Relevant symptoms or observations not in records"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="medical_files">Upload Medical Files (Optional):</label>
+            <input type="file" id="medical_files" multiple accept=".pdf,.jpg,.jpeg,.png,.txt,.csv,.doc,.docx" 
+                   style="padding: 8px; border: 2px dashed #dee2e6; background: white; border-radius: 4px;">
+            <small style="color: #6c757d; display: block; margin-top: 5px;">
+                📎 Supported: Medical Images (JPG, PNG), Reports (PDF, DOC), Lab Data (CSV, TXT)
+            </small>
+        </div>
+        
+        <div class="form-group" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div>
+                <label for="query_priority">Priority:</label>
+                <select id="query_priority" style="width: 150px; margin-left: 5px;">
+                    <option value="routine">Routine</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="stat">STAT</option>
+                </select>
+            </div>
+            
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="follow_up_required" style="width: auto; margin-right: 8px;">
+                <span>Follow-up Required</span>
+            </label>
+            
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="detailed_analysis" style="width: auto; margin-right: 8px;">
+                <span>Detailed Analysis</span>
+            </label>
+        </div>
     </div>
 
     <button onclick="processIntelligentQuery()" style="background: #28a745; font-size: 16px; padding: 15px 30px;">
-        🔍 Ask Medical Assistant
+        🔍 Query Medical Data
     </button>
 
-    <div class="loading" id="loading_main">Processing your medical query...</div>
+    <div class="loading" id="loading_main">Processing clinical query...</div>
     <div class="response" id="response_main" style="display:none;"></div>
 </div>
 
@@ -52,17 +98,17 @@
 <div class="container" style="background: #f8f9fa;">
     <h3>💡 Quick Examples</h3>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
-        <button class="example-btn" onclick="fillExample('What is Ben\\'s sleep summary?')">
-            😴 Ben's Sleep Summary
+        <button class="example-btn" onclick="fillExample('Ben sleep summary')">
+            😴 Ben Sleep Summary
         </button>
-        <button class="example-btn" onclick="fillExample('Show Ben\\'s blood pressure trends')">
-            🩺 Ben's BP Trends
+        <button class="example-btn" onclick="fillExample('Ben BP trends')">
+            🩺 Ben BP Trends
         </button>
-        <button class="example-btn" onclick="fillExample('What are the symptoms of hypertension?')">
+        <button class="example-btn" onclick="fillExample('Hypertension symptoms')">
             📋 Hypertension Info
         </button>
-        <button class="example-btn" onclick="fillExample('Compare Ben\\'s glucose levels')">
-            📊 Ben's Glucose Analysis
+        <button class="example-btn" onclick="fillExample('Ben glucose detailed analysis')">
+            📊 Ben Glucose (Detailed)
         </button>
     </div>
 </div>

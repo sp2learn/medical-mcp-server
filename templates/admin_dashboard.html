@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Tool Provider Management{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🔧 Admin Dashboard</h1>
+    <div class="user-info">
+        <span>Welcome, <strong>{{ current_user }}</strong></span>
+        <a href="/logout">Logout</a>
+    </div>
+</div>
+
+<div class="disclaimer">
+    <strong>⚠️ Administrator Access:</strong> This interface manages external medical tool providers and API integrations. 
+    Changes affect system-wide functionality. Last updated: {{ current_time }}.
+    <small style="float: right;">
+        <a href="javascript:void(0)" onclick="window.location.reload()" style="color: #856404; text-decoration: none;" title="Refresh">🔄</a>
+    </small>
+</div>
+
+<!-- Admin Navigation -->
+<div class="admin-nav" style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <button class="nav-btn active" onclick="showSection('providers')">🔧 Tool Providers</button>
+    <button class="nav-btn" onclick="showSection('add-provider')">➕ Add Provider</button>
+    <button class="nav-btn" onclick="showSection('statistics')">📊 Statistics</button>
+    <button class="nav-btn" onclick="showSection('api-keys')">🔑 API Keys</button>
+    <button class="nav-btn" onclick="showSection('logs')">📋 Logs</button>
+</div>
+
+<!-- Tool Providers Section -->
+<div id="providers-section" class="admin-section">
+    <div class="container">
+        <h2>🔧 Medical Tool Providers</h2>
+        <p style="color: #666;">Manage external medical APIs, tools, and integrations.</p>
+        
+        <div class="providers-grid" id="providers-list">
+            <!-- Providers will be loaded here -->
+        </div>
+        
+        <div class="loading" id="providers-loading">Loading tool providers...</div>
+    </div>
+</div>
+
+<!-- Add Provider Section -->
+<div id="add-provider-section" class="admin-section" style="display: none;">
+    <div class="container">
+        <h2>➕ Add New Tool Provider</h2>
+        
+        <form id="add-provider-form">
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h3>📋 Basic Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="provider_id">Provider ID*:</label>
+                        <input type="text" id="provider_id" required placeholder="e.g., radiology_ai_v1">
+                    </div>
+                    <div class="form-group">
+                        <label for="provider_name">Provider Name*:</label>
+                        <input type="text" id="provider_name" required placeholder="e.g., Radiology AI Assistant">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="provider_description">Description*:</label>
+                    <textarea id="provider_description" rows="3" required placeholder="Describe the medical tool's capabilities and use cases"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="provider_company">Company*:</label>
+                        <input type="text" id="provider_company" required placeholder="e.g., MedTech Solutions Inc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="contact_email">Contact Email*:</label>
+                        <input type="email" id="contact_email" required placeholder="support@medtech.com">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Technical Configuration -->
+            <div class="form-section">
+                <h3>🌐 API Configuration</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="server_url">Server URL*:</label>
+                        <input type="url" id="server_url" required placeholder="https://api.medtech.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="endpoint_path">Endpoint Path*:</label>
+                        <input type="text" id="endpoint_path" required placeholder="/v1/analyze">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="http_method">HTTP Method:</label>
+                        <select id="http_method">
+                            <option value="POST">POST</option>
+                            <option value="GET">GET</option>
+                            <option value="PUT">PUT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="content_type">Content Type:</label>
+                        <select id="content_type">
+                            <option value="application/json">application/json</option>
+                            <option value="application/xml">application/xml</option>
+                            <option value="multipart/form-data">multipart/form-data</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Authentication -->
+            <div class="form-section">
+                <h3>🔐 Authentication</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="auth_type">Authentication Type:</label>
+                        <select id="auth_type" onchange="toggleAuthFields()">
+                            <option value="api_key">API Key</option>
+                            <option value="bearer_token">Bearer Token</option>
+                            <option value="basic_auth">Basic Auth</option>
+                            <option value="oauth2">OAuth 2.0</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="auth-fields">
+                    <div class="form-group">
+                        <label for="api_key">API Key:</label>
+                        <input type="password" id="api_key" placeholder="Enter API key">
+                        <button type="button" onclick="generateApiKey()" style="margin-left: 10px;">Generate</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Medical Categories -->
+            <div class="form-section">
+                <h3>🏥 Medical Categories</h3>
+                <div class="form-group">
+                    <label>Select applicable medical categories:</label>
+                    <div class="checkbox-grid">
+                        <label><input type="checkbox" value="cardiology"> Cardiology</label>
+                        <label><input type="checkbox" value="radiology"> Radiology</label>
+                        <label><input type="checkbox" value="pathology"> Pathology</label>
+                        <label><input type="checkbox" value="neurology"> Neurology</label>
+                        <label><input type="checkbox" value="oncology"> Oncology</label>
+                        <label><input type="checkbox" value="dermatology"> Dermatology</label>
+                        <label><input type="checkbox" value="emergency"> Emergency Medicine</label>
+                        <label><input type="checkbox" value="general"> General Medicine</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Operational Settings -->
+            <div class="form-section">
+                <h3>⚙️ Operational Settings</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="rate_limit">Rate Limit (req/min):</label>
+                        <input type="number" id="rate_limit" value="100" min="1" max="1000">
+                    </div>
+                    <div class="form-group">
+                        <label for="timeout_seconds">Timeout (seconds):</label>
+                        <input type="number" id="timeout_seconds" value="30" min="5" max="300">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" style="background: #28a745;">💾 Save Provider</button>
+                <button type="button" onclick="testProvider()" style="background: #17a2b8;">🧪 Test Connection</button>
+                <button type="reset" style="background: #6c757d;">🔄 Reset Form</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div id="statistics-section" class="admin-section" style="display: none;">
+    <div class="container">
+        <h2>📊 System Statistics</h2>
+        <div class="stats-grid" id="stats-content">
+            <!-- Statistics will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- API Keys Section -->
+<div id="api-keys-section" class="admin-section" style="display: none;">
+    <div class="container">
+        <h2>🔑 API Key Management</h2>
+        <div class="api-keys-content">
+            <button onclick="generateNewApiKey()" style="background: #28a745;">🔑 Generate New API Key</button>
+            <div id="api-keys-list">
+                <!-- API keys will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Section -->
+<div id="logs-section" class="admin-section" style="display: none;">
+    <div class="container">
+        <h2>📋 System Logs</h2>
+        <div class="logs-content">
+            <div class="log-filters">
+                <select id="log-level">
+                    <option value="all">All Levels</option>
+                    <option value="info">Info</option>
+                    <option value="warning">Warning</option>
+                    <option value="error">Error</option>
+                </select>
+                <button onclick="refreshLogs()">🔄 Refresh</button>
+            </div>
+            <div id="logs-content" class="logs-display">
+                <!-- Logs will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/admin.js"></script>
+{% endblock %}
