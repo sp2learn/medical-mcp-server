@@ -138,7 +138,7 @@ class MedicalApp {
     showResponse(elementId, text) {
         const element = document.getElementById(elementId);
         if (element) {
-            element.textContent = text;
+            element.innerHTML = marked.parse(text);
             element.style.display = 'block';
         }
     }
